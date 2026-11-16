@@ -179,8 +179,8 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
 <section id="denied" class="hidden">
   <div class="denied wrap">
     <div style="font-size:60px">🔒</div>
-    <h2 style="margin:10px 0">هذا الحساب ليس حساب مدير</h2>
-    <p style="color:var(--muted);line-height:1.7">شغّل ملف chrili_admin.sql في Supabase برقم هاتفك، ثم سجّل الدخول من جديد.</p>
+    <h2 style="margin:10px 0">ليس لهذا الحساب صلاحية الدخول</h2>
+    <p style="color:var(--muted);line-height:1.7">اطلب من مدير التطبيق أن يمنحك صلاحية «موظف»، ثم سجّل الدخول من جديد.</p>
     <button class="btn" style="max-width:260px" onclick="db.auth.signOut()">تسجيل الخروج</button>
   </div>
 </section>
@@ -215,7 +215,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BUCKET = 'product-images';
 
 let me=null, tab='stats', orderFilter='all', prodFilter='all', prodQ='';
-let CELEBS=[], PRODUCTS=[];
+let CELEBS=[], PRODUCTS=[], USERS=[];
 
 const $ = id => document.getElementById(id);
 const show = (id,on) => $(id).classList.toggle('hidden',!on);
@@ -242,8 +242,11 @@ async function onSignedIn(user){
   show('auth',false); show('loading',true);
   const { data } = await db.from('profiles').select('full_name,role').eq('id',user.id).maybeSingle();
   show('loading',false);
-  if(!data || data.role!=='admin'){ show('denied',true); return; }
-  me={ id:user.id, name:data.full_name };
+  if(!data || !['admin','staff'].includes(data.role)){ show('denied',true); return; }
+  me={ id:user.id, name:data.full_name, role:data.role };
+  const usersTab=document.querySelector('#tabbar [data-t="users"]');
+  usersTab.classList.toggle('hidden', me.role!=='admin');
+  if(me.role!=='admin' && tab==='users') tab='stats';
   show('app',true); go(tab);
 }
 function onSignedOut(){ me=null; ['app','denied','loading'].forEach(x=>show(x,false)); show('auth',true); $('lPw').value=''; }
@@ -267,7 +270,7 @@ function fail(msg, error){ console.error(error); $('main').innerHTML=`<div class
 /* ================== الإحصاءات ================== */
 async function renderStats(){
   const [u, o, p, c] = await Promise.all([
-    db.from('profiles').select('id',{count:'exact',head:true}),
+    me.role==='admin' ? db.from('profiles').select('id',{count:'exact',head:true}) : Promise.resolve({count:null}),
     db.from('orders').select('total,status,created_at'),
     db.from('products').select('id,stock,active'),
     db.from('celebrities').select('id',{count:'exact',head:true})
@@ -281,10 +284,10 @@ async function renderStats(){
   const newN=orders.filter(x=>x.status==='new').length;
   const low=(p.data||[]).filter(x=>x.active && x.stock<=3).length;
   $('main').innerHTML=`
-    <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋</h2>
+    <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#0f5c4d':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
     <p class="sub">نظرة سريعة على تطبيقك</p>
     <div class="stats">
-      <div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>
+      ${me.role==='admin'?`<div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
       <div class="stat"><div class="k">📦 كل الطلبات</div><div class="v">${orders.length}</div></div>
       <div class="stat"><div class="k">🆕 طلبات تنتظر التأكيد</div><div class="v" style="color:#b7791f">${newN}</div></div>
       <div class="stat"><div class="k">📅 طلبات اليوم</div><div class="v">${todayN}</div></div>
@@ -299,7 +302,7 @@ async function renderStats(){
 
 /* ================== الطلبات ================== */
 async function renderOrders(){
-  let q=db.from('orders').select('id,total,status,created_at,address,phone,profiles(full_name),order_items(qty,unit_price,products(name))').order('created_at',{ascending:false}).limit(200);
+  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name),order_items(qty,unit_price,products(name))').order('created_at',{ascending:false}).limit(200);
   if(orderFilter!=='all') q=q.eq('status',orderFilter);
   const { data, error } = await q;
   if(error) return fail('تعذّر تحميل الطلبات', error);
@@ -315,7 +318,7 @@ function orderCard(o){
   const next={ new:[['confirmed','✔ تأكيد','pri'],['cancelled','✕ إلغاء','dan']], confirmed:[['delivered','🚚 تم التوصيل','pri'],['cancelled','✕ إلغاء','dan']], delivered:[], cancelled:[['new','↺ إرجاع إلى جديد','']] }[o.status]||[];
   return `<div class="card">
     <div class="hd"><span class="t">طلب ${shortId(o.id)}</span>${pill(o.status)}</div>
-    <div class="s">👤 ${esc(o.profiles?.full_name||'')} · 📞 ${esc(o.phone||'')}<br>📍 ${esc(o.address||'—')}<br>🗓️ ${day(o.created_at)}</div>
+    <div class="s">👤 ${esc(o.customer_name||o.profiles?.full_name||'')} · 📞 ${esc(o.phone||'')}<br>📍 ${esc(o.address||'—')}<br>🗓️ ${day(o.created_at)}</div>
     <div class="s" style="color:var(--ink);margin-top:8px">${items}</div>
     <div class="hd" style="margin-top:8px"><span class="t">الإجمالي</span><span class="t" style="color:var(--brand)">${fmt(o.total)}</span></div>
     ${next.length?`<div class="acts">${next.map(([s,l,c])=>`<button class="sbtn ${c}" onclick="setStatus('${o.id}','${s}')">${l}</button>`).join('')}</div>`:''}
@@ -439,11 +442,80 @@ function editCeleb(id){
 async function renderUsers(){
   const { data, error } = await db.from('profiles').select('id,full_name,phone,role,created_at').order('created_at',{ascending:false});
   if(error) return fail('تعذّر تحميل المستخدمين', error);
-  const roleL={customer:'زبون',celebrity:'مشهور',admin:'مدير'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',admin:'#0f5c4d'};
-  $('main').innerHTML=`<div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} مستخدم مسجّل</span></div>
-    ${data.map(u=>`<div class="card"><div class="hd"><span class="t">${esc(u.full_name||'—')}</span>
+  const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#0f5c4d'};
+  USERS=data;
+  const admins=data.filter(u=>u.role==='staff').length;
+  $('main').innerHTML=`<div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} مستخدم مسجّل · ${admins} موظف</span></div>
+    <div class="card" style="background:#e7f2ef"><div class="s" style="color:var(--ink)">
+      ➕ <b>لإضافة شخص:</b> اضغط «إضافة مستخدم»، واختر «زبون» أو «موظف»، ثم أعطه رقمه وكلمة المرور ليدخل بهما.<br>👷 الموظف يدير الطلبات والمنتجات والمشاهير، ولا يرى المستخدمين ولا يمنح الصلاحيات. أنت وحدك ترى كل شيء.</div></div>
+    <div class="toolbar"><button class="sbtn pri" onclick="addUser()">+ إضافة مستخدم</button>
+      <input class="grow" id="uq" placeholder="🔎 ابحث بالاسم أو الهاتف..." oninput="filterUsers()"></div>
+    <div id="ulist">${data.map(u=>`<div class="card" data-k="${esc((u.full_name||'')+' '+u.phone)}"><div class="hd"><span class="t">${esc(u.full_name||'—')}${u.id===me.id?' (أنت)':''}</span>
       <span class="pill" style="background:${roleC[u.role]||'#666'}">${roleL[u.role]||u.role}</span></div>
-      <div class="s">📞 ${esc(u.phone)} · سجّل في ${day(u.created_at)}</div></div>`).join('')}`;
+      <div class="s">📞 ${esc(u.phone)} · سجّل في ${day(u.created_at)}</div>
+      ${(u.id===me.id||u.role==='admin')?'':`<div class="acts">${u.role==='staff'
+        ?`<button class="sbtn dan" onclick="setRole('${u.id}','customer')">إزالة صلاحية الموظف</button>`
+        :`<button class="sbtn pri" onclick="setRole('${u.id}','staff')">👷 اجعله موظفاً</button>`}
+        <button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`}
+    </div>`).join('')}</div>`;
+}
+async function callAdmin(body){
+  const { data, error } = await db.functions.invoke('admin-users', { body });
+  if(error){
+    let msg=error.message;
+    try{ const j=await error.context.json(); if(j?.error) msg=j.error; }catch(e){}
+    throw new Error(msg);
+  }
+  if(data?.error) throw new Error(data.error);
+  return data;
+}
+function addUser(){
+  sheet(`<h3>إضافة مستخدم</h3>
+    <label>الاسم الكامل</label><input class="field" id="nName">
+    <label>رقم الهاتف</label><input class="field" id="nPhone" inputmode="numeric" placeholder="8 أرقام">
+    <label>كلمة المرور</label><input class="field" id="nPw" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+    <label>نوع الحساب</label>
+    <select id="nRole"><option value="customer">زبون</option><option value="staff">👷 موظف (يدير الطلبات والمنتجات)</option></select>
+    <p class="hint">أعطِ الشخص رقمه وكلمة المرور ليدخل بهما، ويستطيع أن تغيّرها له لاحقاً.</p>
+    <button class="btn" id="saveBtn">إنشاء الحساب</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const body={ action:'create', full_name:$('nName').value.trim(), phone:$('nPhone').value.trim(), password:$('nPw').value, role:$('nRole').value };
+    if(body.full_name.length<2) return toast('أدخل الاسم');
+    if(!/^\d{8}$/.test(body.phone)) return toast('رقم الهاتف يجب أن يكون 8 أرقام');
+    if(body.password.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
+    const b=$('saveBtn'); b.disabled=true; b.textContent='⏳ جارٍ الإنشاء...';
+    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء الحساب ✅'); renderUsers(); }
+    catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
+  };
+}
+function resetPw(id){
+  const name=(USERS.find(u=>u.id===id)||{}).full_name||'';
+  sheet(`<h3>كلمة مرور جديدة</h3><p class="s">للمستخدم: <b>${esc(name)}</b></p>
+    <label>كلمة المرور الجديدة</label><input class="field" id="rPw" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const pw=$('rPw').value; if(pw.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
+    busy(true);
+    try{ await callAdmin({ action:'set_password', id, password:pw }); closeSheet(); toast('تم تغيير كلمة المرور ✅'); }
+    catch(e){ busy(false); toast('تعذّر التغيير: '+e.message); }
+  };
+}
+function filterUsers(){
+  const q=$('uq').value.trim();
+  document.querySelectorAll('#ulist .card').forEach(c=>c.style.display=(!q||c.dataset.k.includes(q))?'':'none');
+}
+function setRole(id,role){
+  const name=(USERS.find(u=>u.id===id)||{}).full_name||'';
+  const msg = role==='staff'
+    ? `سيستطيع «${name}» إدارة الطلبات والمنتجات والمشاهير (دون المستخدمين). هل أنت متأكد؟`
+    : `إزالة صلاحية الموظف من «${name}»؟`;
+  confirmBox(msg, async()=>{
+    const { error } = await db.from('profiles').update({role}).eq('id',id);
+    if(error) return toast('تعذّر التحديث: '+error.message);
+    toast(role==='staff'?'أصبح موظفاً ✅':'تمت إزالة الصلاحية'); renderUsers();
+  });
 }
 
 /* ================== أدوات مشتركة ================== */
