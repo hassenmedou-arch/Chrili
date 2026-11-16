@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>اشريلي Chrili</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f5c4d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="اشريلي">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -153,6 +160,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
       <button class="btn" type="submit" id="rBtn">إنشاء الحساب</button>
     </form>
     <div class="err" id="authErr"></div>
+    <p class="hint"><a href="privacy.html" style="color:var(--brand)">سياسة الخصوصية</a></p>
   </div>
 </section>
 
@@ -458,5 +466,8 @@ db.auth.onAuthStateChange((event, session)=>{
 });
 </script>
 
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+</script>
 </body>
 </html>

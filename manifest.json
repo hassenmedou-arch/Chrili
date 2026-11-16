@@ -1,0 +1,20 @@
+{
+  "name": "اشريلي Chrili",
+  "short_name": "اشريلي",
+  "description": "تسوّق مباشرة من واجهات مشاهيرك المفضلين",
+  "lang": "ar",
+  "dir": "rtl",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f5c4d",
+  "theme_color": "#0f5c4d",
+  "categories": ["shopping"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
