@@ -296,7 +296,8 @@ async function loadCatalog(){
     document.getElementById('homeBody').innerHTML = `<div class="empty">تعذّر تحميل البيانات. تحقق من الاتصال ثم أعد فتح التطبيق.</div>`;
     return false;
   }
-  CELEBS = c.data; PRODUCTS = p.data;
+  CELEBS = c.data;
+  PRODUCTS = p.data.filter(x => CELEBS.some(c => c.id === x.celebrity_id)); // إخفاء منتجات المشاهير المخفيين
   // إزالة منتجات من السلة لم تعد متوفرة
   Object.keys(cart).forEach(id=>{ if(!P(id)) delete cart[id]; }); saveCart();
   return true;
