@@ -180,6 +180,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
   <div class="denied wrap">
     <div style="font-size:60px">🔒</div>
     <h2 style="margin:10px 0">ليس لهذا الحساب صلاحية الدخول</h2>
+    <p style="margin:6px 0 12px">إذا كنت تاجراً: ادخل من <a href="merchant.html" style="color:var(--brand);font-weight:800">بوابة التاجر</a></p>
     <p style="color:var(--muted);line-height:1.7">اطلب من مدير التطبيق أن يمنحك صلاحية «موظف»، ثم سجّل الدخول من جديد.</p>
     <button class="btn" style="max-width:260px" onclick="db.auth.signOut()">تسجيل الخروج</button>
   </div>
@@ -199,7 +200,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
     <button data-t="products">🏷️ المنتجات</button>
     <button data-t="celebs">⭐ المشاهير</button>
     <button data-t="users">👥 المستخدمون</button>
-    <button data-t="partners">🔌 الربط</button>
+    <button data-t="partners">🏪 التجّار</button>
     <button data-t="errors">⚠️ الأخطاء</button>
   </nav></header>
   <main class="wrap" id="main" style="padding-top:16px"></main>
@@ -327,9 +328,9 @@ async function renderStats(){
 
 /* ================== الطلبات ================== */
 async function renderOrders(){
-  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name),order_items(qty,unit_price,products(name))').order('created_at',{ascending:false}).limit(200);
+  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name),order_items(qty,unit_price,prep_status,merchant_id,products(name))').order('created_at',{ascending:false}).limit(200);
   if(orderFilter!=='all') q=q.eq('status',orderFilter);
-  const { data, error } = await q;
+  const [{ data, error }] = await Promise.all([q, loadMerchants()]);
   if(error) return fail('تعذّر تحميل الطلبات', error);
   const opts=[['all','كل الطلبات'],...Object.entries(STATUS).map(([k,v])=>[k,v[0]])];
   $('main').innerHTML=`
@@ -339,7 +340,9 @@ async function renderOrders(){
     ${data.length?data.map(orderCard).join(''):'<div class="empty">لا توجد طلبات</div>'}`;
 }
 function orderCard(o){
-  const items=o.order_items.map(i=>`${esc(i.products?.name||'منتج')} × ${i.qty} = ${fmt(i.unit_price*i.qty)}`).join('<br>');
+  const PS={pending:['⏳ بانتظار التاجر','#b7791f'],preparing:['🧺 قيد التجهيز','#1f4e79'],ready:['✅ جاهز للاستلام','#2E7D5B']};
+  const mname=id=>(MERCHANTS.find(m=>m.id===id)||{}).name||'';
+  const items=o.order_items.map(i=>`${esc(i.products?.name||'منتج')} × ${i.qty} = ${fmt(i.unit_price*i.qty)}${i.merchant_id&&!['cancelled','delivered'].includes(o.status)?` <span class="pill" style="background:${PS[i.prep_status][1]};font-size:11.5px">${PS[i.prep_status][0]}${mname(i.merchant_id)?' · '+esc(mname(i.merchant_id)):''}</span>`:''}`).join('<br>');
   const next={ new:[['confirmed','✔ تأكيد','pri'],['cancelled','✕ إلغاء','dan']], confirmed:[['delivered','🚚 تم التوصيل','pri'],['cancelled','✕ إلغاء','dan']], delivered:[], cancelled:[['new','↺ إرجاع إلى جديد','']] }[o.status]||[];
   return `<div class="card">
     <div class="hd"><span class="t">طلب ${shortId(o.id)}</span>${pill(o.status)}</div>
@@ -365,7 +368,7 @@ async function loadCatalog(){
   CELEBS=c.data; PRODUCTS=p.data;
 }
 async function renderProducts(){
-  try{ await loadCatalog(); }catch(e){ return fail('تعذّر تحميل المنتجات', e); }
+  try{ await Promise.all([loadCatalog(), loadMerchants()]); }catch(e){ return fail('تعذّر تحميل المنتجات', e); }
   const cname=id=>CELEBS.find(c=>c.id===id)?.name||'—';
   let list=PRODUCTS.filter(p=>(prodFilter==='all'||p.celebrity_id===prodFilter)&&(!prodQ||p.name.includes(prodQ)));
   $('main').innerHTML=`
@@ -380,7 +383,7 @@ async function renderProducts(){
         ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(p.name)}</div>
           <div class="s">${esc(cname(p.celebrity_id))} · <b style="color:var(--brand)">${fmt(p.price)}</b><br>
-          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}</div></div>
+          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}${p.merchant_id?' · 🏪 '+esc((MERCHANTS.find(m=>m.id===p.merchant_id)||{}).name||''):''}</div></div>
       </div>
       <div class="acts"><button class="sbtn" onclick="editProduct('${p.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="toggleActive('products','${p.id}',${!p.active})">${p.active?'🙈 إخفاء':'👁️ إظهار'}</button>
@@ -395,6 +398,8 @@ function editProduct(id){
     <label>المشهور صاحب المنتج</label>
     <select id="fCeleb">${CELEBS.map(c=>`<option value="${c.id}" ${c.id===p.celebrity_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     <label>اسم المنتج</label><input class="field" id="fName" value="${esc(p.name)}">
+    <label>التاجر الذي يجهّز هذا المنتج</label>
+    <select id="fMerch"><option value="">— لا أحد (أنت تجهّزه) —</option>${MERCHANTS.map(m=>`<option value="${m.id}" ${m.id===p.merchant_id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
     <label>الوصف (اختياري)</label><textarea id="fDesc">${esc(p.description||'')}</textarea>
     <label>السعر بالأوقية</label><input class="field" id="fPrice" inputmode="decimal" value="${esc(p.price)}">
     <label>الكمية المتوفرة</label><input class="field" id="fStock" inputmode="numeric" value="${esc(p.stock)}">
@@ -405,7 +410,8 @@ function editProduct(id){
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{
     const row={ celebrity_id:$('fCeleb').value, name:$('fName').value.trim(), description:$('fDesc').value.trim()||null,
-      price:Number($('fPrice').value.replace(',','.')), stock:parseInt($('fStock').value,10), active:$('fActive').checked };
+      price:Number($('fPrice').value.replace(',','.')), stock:parseInt($('fStock').value,10), active:$('fActive').checked,
+      merchant_id:$('fMerch').value||null };
     if(row.name.length<2) return toast('أدخل اسم المنتج');
     if(!(row.price>=0)) return toast('أدخل سعرًا صحيحًا');
     if(!(row.stock>=0)) return toast('أدخل كمية صحيحة');
@@ -468,7 +474,7 @@ function editCeleb(id){
 async function renderUsers(){
   const { data, error } = await db.from('profiles').select('id,full_name,phone,role,created_at').order('created_at',{ascending:false});
   if(error) return fail('تعذّر تحميل المستخدمين', error);
-  const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#0E4D3A'};
+  const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير',merchant:'تاجر'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#0E4D3A',merchant:'#b7791f'};
   USERS=data;
   const admins=data.filter(u=>u.role==='staff').length;
   $('main').innerHTML=`<div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} مستخدم مسجّل · ${admins} موظف</span></div>
@@ -479,7 +485,7 @@ async function renderUsers(){
     <div id="ulist">${data.map(u=>`<div class="card" data-k="${esc((u.full_name||'')+' '+u.phone)}"><div class="hd"><span class="t">${esc(u.full_name||'—')}${u.id===me.id?' (أنت)':''}</span>
       <span class="pill" style="background:${roleC[u.role]||'#666'}">${roleL[u.role]||u.role}</span></div>
       <div class="s">📞 ${esc(u.phone)} · سجّل في ${day(u.created_at)}</div>
-      ${(u.id===me.id||u.role==='admin')?'':`<div class="acts">${u.role==='staff'
+      ${(u.id===me.id||u.role==='admin')?'':u.role==='merchant'?`<div class="acts"><button class="sbtn" onclick="go('partners')">🏪 إدارته من تبويب التجّار</button><button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`:`<div class="acts">${u.role==='staff'
         ?`<button class="sbtn dan" onclick="setRole('${u.id}','customer')">إزالة صلاحية الموظف</button>`
         :`<button class="sbtn pri" onclick="setRole('${u.id}','staff')">👷 اجعله موظفاً</button>`}
         <button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`}
@@ -550,7 +556,10 @@ function setRole(id,role){
 let PARTNERS=[];
 const PLAT={shopify:'Shopify',woocommerce:'WooCommerce',json:'JSON (نظام خاص)'};
 async function renderPartners(){
-  try{ await loadCatalog(); }catch(e){ return fail('تعذّر تحميل المشاهير', e); }
+  try{ await Promise.all([loadCatalog(), loadMerchants()]); }catch(e){ return fail('تعذّر تحميل البيانات', e); }
+  const openQ = await db.from('order_items').select('merchant_id, prep_status, orders!inner(status)').not('merchant_id','is',null).in('orders.status',['new','confirmed']);
+  const pend = id => (openQ.data||[]).filter(r=>r.merchant_id===id && r.prep_status!=='ready').length;
+  const ready = id => (openQ.data||[]).filter(r=>r.merchant_id===id && r.prep_status==='ready').length;
   const [{data,error},{data:logs}] = await Promise.all([
     db.from('partners').select('*').order('created_at',{ascending:false}),
     db.from('partner_sync_log').select('*').order('started_at',{ascending:false}).limit(30)
@@ -560,7 +569,22 @@ async function renderPartners(){
   const cname=id=>CELEBS.find(c=>c.id===id)?.name||'—';
   const cnt=id=>PRODUCTS.filter(p=>p.partner_id===id).length;
   const when=d=>d?new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'لم تتم بعد';
-  $('main').innerHTML=`
+  const mHtml=`
+    <h3 style="margin:6px 0 8px">🏪 حسابات التجّار</h3>
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
+      كل تاجر يدخل إلى <b dir="ltr">chrili.pages.dev/merchant.html</b> برقمه وكلمة مروره، فيرى فقط الطلبات التي عليه تجهيزها (بدون أسعار ولا بيانات الزبون)، ويضغط «جاهز للاستلام».<br>
+      🏷️ حدّد لكل منتج تاجره من تبويب «المنتجات» (أو من إعدادات الربط أدناه).</div></div>
+    <div class="toolbar"><button class="sbtn pri" onclick="addMerchant()">+ حساب تاجر</button>
+      <span style="color:var(--muted);font-weight:700">${MERCHANTS.length} تاجر</span></div>
+    ${MERCHANTS.map(m=>`<div class="card"><div class="hd"><span class="t">${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
+        <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">⏳ ${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">✅ ${ready(m.id)} جاهز</span>`:''}</span></div>
+      <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج</div>
+      <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم</button>
+        ${m.user_id?`<button class="sbtn" onclick="resetMerchantPw('${m.id}')">🔑 كلمة مرور جديدة</button>`:''}
+        <button class="sbtn ${m.active?'dan':''}" onclick="toggleMerchant('${m.id}',${!m.active})">${m.active?'⛔ إيقاف':'✅ تفعيل'}</button></div></div>`).join('')
+      || '<div class="empty">لا يوجد حساب تاجر بعد</div>'}
+    <h3 style="margin:22px 0 8px">🔌 الربط بأنظمة التجّار (API)</h3>`;
+  $('main').innerHTML=mHtml+`
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       🔌 <b>اربط متجر تاجر بواجهة مشهور:</b> تُستورد منتجاته (الاسم، الصورة، السعر، المخزون) وتتحدّث تلقائياً.<br>
       🔑 مفتاح الـAPI لا يُكتب هنا: ضعه في Supabase ← Edge Functions ← Secrets باسم يبدأ بـ <b dir="ltr">PARTNER_</b> واكتب الاسم فقط هنا.</div></div>
@@ -591,6 +615,8 @@ function editPartner(id){
     <p class="hint" id="pHint"></p>
     <label>واجهة المشهور التي تظهر فيها المنتجات</label>
     <select id="pCeleb">${CELEBS.map(c=>`<option value="${c.id}" ${c.id===p.celebrity_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    <label>التاجر الذي يجهّز طلبات هذه المنتجات</label>
+    <select id="pMerch"><option value="">— لا أحد —</option>${MERCHANTS.map(m=>`<option value="${m.id}" ${m.id===p.merchant_id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
     <label>اسم المفتاح في أسرار Supabase</label><input class="field" id="pSecret" dir="ltr" value="${esc(p.secret_name||'')}" placeholder="PARTNER_ZARA_KEY">
     <label>معامل تحويل السعر (مثلاً من الدولار إلى الأوقية)</label><input class="field" id="pMul" inputmode="decimal" value="${esc(p.price_multiplier)}">
     <label>عمولتك تُضاف على السعر (%)</label><input class="field" id="pMk" inputmode="decimal" value="${esc(p.markup_percent)}">
@@ -609,7 +635,7 @@ function editPartner(id){
     let fm={}; try{ fm=JSON.parse($('pMap').value.trim()||'{}'); if(typeof fm!=='object'||Array.isArray(fm)) throw 0; }catch(e){ return toast('ربط الحقول ليس JSON صحيحاً'); }
     const row={ name:$('pName').value.trim(), platform:$('pPlat').value, base_url:$('pUrl').value.trim(), celebrity_id:$('pCeleb').value,
       secret_name:$('pSecret').value.trim().toUpperCase()||null, price_multiplier:Number($('pMul').value.replace(',','.')),
-      markup_percent:Number($('pMk').value.replace(',','.')), field_map:fm, deactivate_missing:$('pDeact').checked, active:$('pAct').checked };
+      markup_percent:Number($('pMk').value.replace(',','.')), field_map:fm, merchant_id:$('pMerch').value||null, deactivate_missing:$('pDeact').checked, active:$('pAct').checked };
     if(row.name.length<2) return toast('أدخل اسم التاجر');
     if(!/^https:\/\/[^\s]+\.[^\s]+/.test(row.base_url)) return toast('الرابط يجب أن يبدأ بـ https://');
     if(row.secret_name && !/^PARTNER_[A-Z0-9_]{2,60}$/.test(row.secret_name)) return toast('اسم المفتاح يجب أن يبدأ بـ PARTNER_ وبحروف إنجليزية كبيرة وأرقام');
@@ -660,6 +686,62 @@ function delPartner(id){
     const { error } = await db.from('partners').delete().eq('id',id);
     if(error) return toast('تعذّر الحذف: '+error.message);
     toast('تم حذف الربط'); renderPartners();
+  });
+}
+
+let MERCHANTS=[];
+async function loadMerchants(){
+  const { data, error } = await db.from('merchants').select('*').order('name');
+  if(error) throw error; MERCHANTS=data||[];
+}
+function addMerchant(){
+  sheet(`<h3>حساب تاجر جديد</h3>
+    <label>اسم التاجر / المحل</label><input class="field" id="mName">
+    <label>رقم هاتفه (للدخول)</label><input class="field" id="mPhone" inputmode="numeric" placeholder="8 أرقام">
+    <label>كلمة المرور</label><input class="field" id="mPw" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+    <p class="hint">أعطِ التاجر رقمه وكلمة المرور والرابط: chrili.pages.dev/merchant.html</p>
+    <button class="btn" id="saveBtn">إنشاء الحساب</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const body={ action:'create_merchant', name:$('mName').value.trim(), phone:$('mPhone').value.trim(), password:$('mPw').value };
+    if(body.name.length<2) return toast('أدخل اسم التاجر');
+    if(!/^\d{8}$/.test(body.phone)) return toast('رقم الهاتف يجب أن يكون 8 أرقام');
+    if(body.password.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
+    const b=$('saveBtn'); b.disabled=true; b.textContent='⏳ جارٍ الإنشاء...';
+    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب التاجر ✅'); renderPartners(); }
+    catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
+  };
+}
+function renameMerchant(id){
+  const m=MERCHANTS.find(x=>x.id===id);
+  sheet(`<h3>اسم التاجر</h3><input class="field" id="mName" value="${esc(m.name)}">
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const name=$('mName').value.trim(); if(name.length<2) return toast('أدخل الاسم');
+    busy(true); const { error } = await db.from('merchants').update({name}).eq('id',id);
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
+    closeSheet(); toast('تم الحفظ ✅'); renderPartners();
+  };
+}
+function resetMerchantPw(id){
+  const m=MERCHANTS.find(x=>x.id===id);
+  sheet(`<h3>كلمة مرور جديدة</h3><p class="s">للتاجر: <b>${esc(m.name)}</b></p>
+    <label>كلمة المرور الجديدة</label><input class="field" id="rPw" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const pw=$('rPw').value; if(pw.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
+    busy(true);
+    try{ await callAdmin({ action:'set_password', id:m.user_id, password:pw }); closeSheet(); toast('تم تغيير كلمة المرور ✅'); }
+    catch(e){ busy(false); toast('تعذّر التغيير: '+e.message); }
+  };
+}
+function toggleMerchant(id,val){
+  confirmBox(val?'تفعيل حساب هذا التاجر؟':'إيقاف حساب هذا التاجر؟ لن يستطيع رؤية الطلبات حتى تعيد تفعيله.', async()=>{
+    const { error } = await db.from('merchants').update({active:val}).eq('id',id);
+    if(error) return toast('تعذّر التحديث: '+error.message);
+    toast(val?'تم التفعيل ✅':'تم الإيقاف'); renderPartners();
   });
 }
 

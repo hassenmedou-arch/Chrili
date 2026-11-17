@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اشريلي — بوابة التاجر</title>
+<meta name="theme-color" content="#0E4D3A">
+<link rel="icon" type="image/png" href="icon-tent-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBF7EE;--card:#fff;--ink:#1d2321;--muted:#5f6763;--line:#E9E1D3;--brand:#0E4D3A;--gold:#C99A2E;--danger:#c0392b;--ok:#2E7D5B;--blue:#1f4e79}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Tajawal',system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none}
+.hidden{display:none!important}
+.wrap{max-width:720px;margin:0 auto;padding:0 14px 60px}
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 80% 0%,rgba(201,154,46,.35) 0,transparent 50%),linear-gradient(160deg,#0A3A2C,var(--brand))}
+.auth-card{background:#fff;width:100%;max-width:380px;border-radius:24px;padding:28px 22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
+.logo-mark{width:46px;height:46px;border-radius:13px;background:var(--brand);display:grid;place-items:center}
+.logo h1{font-family:'Reem Kufi','Tajawal',sans-serif;font-size:28px;color:var(--brand)}
+.logo small{display:block;font-size:13px;color:var(--gold);font-weight:700}
+label{display:block;font-size:14px;font-weight:700;margin:12px 0 6px}
+.field{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;font-family:inherit;outline:none}
+.field:focus{border-color:var(--brand)}
+.btn{width:100%;padding:14px;border-radius:12px;background:var(--brand);color:#fff;font-size:17px;font-weight:700;margin-top:18px}
+.err{color:var(--danger);font-size:14px;margin-top:10px;min-height:18px;text-align:center}
+header{position:sticky;top:0;z-index:10;background:rgba(251,247,238,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top{max-width:720px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.top .logo{margin:0}.top .logo-mark{width:36px;height:36px;border-radius:10px}.top .logo h1{font-size:20px}
+.spacer{flex:1}
+.ibtn{min-width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:15px;font-weight:700;padding:0 12px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px}
+.tabs button{flex:0 0 auto;padding:10px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--muted)}
+.tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.tabs .n{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--gold);color:#1d2321;font-size:12px;margin-inline-start:4px}
+.hello{margin:14px 0 2px;font-size:20px;font-weight:800}
+.sub{color:var(--muted);font-size:14px;margin-bottom:6px}
+.order{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:12px;box-shadow:0 4px 14px rgba(20,40,35,.06)}
+.order.closed{opacity:.6}
+.oh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.ref{font-weight:800;font-size:17px;direction:ltr}
+.time{color:var(--muted);font-size:13px}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;color:#fff;font-size:12.5px;font-weight:700}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px dashed var(--line)}
+.thumb{width:58px;height:58px;border-radius:12px;object-fit:cover;background:var(--bg);display:grid;place-items:center;flex:0 0 auto}
+.iname{font-weight:700}
+.qty{font-size:22px;font-weight:800;color:var(--brand);min-width:46px;text-align:center}
+.acts{display:flex;gap:8px;margin-top:8px}
+.acts button{flex:1;min-height:44px;border-radius:12px;font-weight:800;font-size:15px}
+.b-prep{background:#F4ECDB;color:var(--ink)}
+.b-ready{background:var(--ok);color:#fff}
+.b-undo{background:#fff;border:1px solid var(--line)!important;color:var(--muted);flex:0 0 auto!important;padding:0 14px}
+.empty{text-align:center;color:var(--muted);padding:50px 10px;font-size:16px}
+.note{background:#F4ECDB;border-radius:14px;padding:12px;font-size:14px;line-height:1.7;margin-top:12px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:#1d2321;color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;transition:.25s;z-index:50;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<section id="auth" class="hidden">
+  <div class="auth-card">
+    <div class="logo"><div class="logo-mark" id="mk1"></div><div><h1>اشريلي</h1><small>بوابة التاجر</small></div></div>
+    <p class="sub" style="text-align:center;margin-top:6px">ادخل لترى الطلبات التي عليك تجهيزها</p>
+    <form id="loginForm">
+      <label for="lPhone">رقم الهاتف</label><input class="field" id="lPhone" inputmode="numeric" autocomplete="username" placeholder="8 أرقام">
+      <label for="lPw">كلمة المرور</label><input class="field" id="lPw" type="password" autocomplete="current-password">
+      <button class="btn" type="submit" id="lBtn">دخول</button>
+      <div class="err" id="lErr"></div>
+    </form>
+  </div>
+</section>
+
+<section id="denied" class="hidden"><div class="wrap"><div class="empty">⛔ هذا الحساب ليس حساب تاجر.<br><br><button class="ibtn" onclick="logout()">تسجيل الخروج</button></div></div></section>
+
+<section id="app" class="hidden">
+  <header><div class="top">
+    <div class="logo"><div class="logo-mark" id="mk2"></div><h1>بوابة التاجر</h1></div>
+    <span class="spacer"></span>
+    <button class="ibtn" id="notifBtn" onclick="askNotif()" aria-label="تفعيل التنبيهات">🔔</button>
+    <button class="ibtn" onclick="load(true)" aria-label="تحديث">🔄</button>
+    <button class="ibtn" onclick="logout()" aria-label="خروج">⎋</button>
+  </div></header>
+  <div class="wrap">
+    <div class="hello" id="hello"></div>
+    <div class="sub" id="lastUpd"></div>
+    <nav class="tabs" id="tabs"></nav>
+    <div id="list"></div>
+    <div class="note">📌 عند وصول طلب جديد: اضغط <b>«بدأت التجهيز»</b>، ثم <b>«جاهز للاستلام»</b> عندما يصبح جاهزاً. فريق اشريلي يرى ذلك مباشرة ويأتي لاستلامه.<br>🔔 اترك هذه الصفحة مفتوحة لتسمع تنبيهاً عند كل طلب جديد.</div>
+  </div>
+</section>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TENT = '<svg viewBox="0 0 118 104" width="66%" height="66%" aria-hidden="true"><path d="M59 4 L112 96 L6 96 Z" fill="#FBF7EE"/><path d="M59 4 L59 96" stroke="#C99A2E" stroke-width="5"/><path d="M30 70 L44 58 L59 70 L74 58 L88 70" fill="none" stroke="#C99A2E" stroke-width="5"/><path d="M48 96 Q59 74 70 96 Z" fill="#0E4D3A"/><circle cx="59" cy="5" r="5" fill="#C99A2E"/></svg>';
+$('mk1').innerHTML = TENT; $('mk2').innerHTML = TENT;
+
+const PREP = { pending:['جديد — بانتظار التجهيز','#C99A2E'], preparing:['قيد التجهيز','#1f4e79'], ready:['جاهز للاستلام','#2E7D5B'] };
+const OST = { new:'جديد', confirmed:'مؤكَّد', delivered:'تم التوصيل', cancelled:'ملغى' };
+let me = null, ROWS = [], filter = 'todo', known = null, timer = null;
+
+function show(id, on){ $(id).classList.toggle('hidden', !on); }
+let tt; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2600); }
+
+$('loginForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const phone = $('lPhone').value.trim(), pw = $('lPw').value;
+  $('lErr').textContent = '';
+  if (!/^\d{8}$/.test(phone)) return $('lErr').textContent = 'رقم الهاتف يجب أن يكون 8 أرقام';
+  $('lBtn').disabled = true; $('lBtn').textContent = '⏳';
+  const { error } = await db.auth.signInWithPassword({ email: phone + '@chrili.app', password: pw });
+  $('lBtn').disabled = false; $('lBtn').textContent = 'دخول';
+  if (error) $('lErr').textContent = 'الرقم أو كلمة المرور غير صحيحة';
+};
+async function logout(){ clearInterval(timer); await db.auth.signOut(); }
+
+async function onSignedIn(user){
+  const [{ data: p }, { data: m }] = await Promise.all([
+    db.from('profiles').select('full_name, role').eq('id', user.id).single(),
+    db.from('merchants').select('id, name, active').eq('user_id', user.id).maybeSingle()
+  ]);
+  ['auth','denied','app'].forEach(x => show(x, false));
+  if (p?.role !== 'merchant' || !m || !m.active) { show('denied', true); return; }
+  me = { id: user.id, name: m.name };
+  $('hello').textContent = 'مرحباً ' + m.name + ' 👋';
+  show('app', true);
+  await load(true);
+  clearInterval(timer); timer = setInterval(() => load(false), 20000);
+}
+db.auth.onAuthStateChange((ev, session) => {
+  if (session?.user) { if (!me || me.id !== session.user.id) setTimeout(() => onSignedIn(session.user), 0); }
+  else { me = null; clearInterval(timer); ['app','denied'].forEach(x => show(x, false)); show('auth', true); }
+});
+
+async function load(manual){
+  const { data, error } = await db.rpc('merchant_queue', { p_days: 14 });
+  if (error) { if (manual) toast('تعذّر التحميل: ' + error.message); return; }
+  ROWS = data || [];
+  const ids = new Set(ROWS.filter(r => r.prep_status === 'pending' && !['cancelled','delivered'].includes(r.order_status)).map(r => r.item_id));
+  if (known) {
+    const fresh = [...ids].filter(i => !known.has(i));
+    if (fresh.length) alertNew(fresh.length);
+  }
+  known = new Set(ROWS.map(r => r.item_id));
+  $('lastUpd').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) + ' · يتحدّث تلقائياً';
+  render();
+}
+
+function render(){
+  const open = r => !['cancelled','delivered'].includes(r.order_status);
+  const cnt = {
+    todo: ROWS.filter(r => open(r) && r.prep_status !== 'ready').length,
+    ready: ROWS.filter(r => open(r) && r.prep_status === 'ready').length,
+    all: ROWS.length
+  };
+  $('tabs').innerHTML = [['todo','للتجهيز'],['ready','جاهز'],['all','الكل (14 يوماً)']].map(([k,l]) =>
+    `<button class="${filter===k?'on':''}" onclick="filter='${k}';render()">${l}${cnt[k]?`<span class="n">${cnt[k]}</span>`:''}</button>`).join('');
+  const rows = ROWS.filter(r => filter === 'all' ? true : filter === 'ready' ? (open(r) && r.prep_status === 'ready') : (open(r) && r.prep_status !== 'ready'));
+  const byOrder = {};
+  rows.forEach(r => { (byOrder[r.order_id] ||= { ref: r.order_ref, at: r.created_at, st: r.order_status, items: [] }).items.push(r); });
+  const orders = Object.values(byOrder).sort((a,b) => filter === 'todo' ? a.at.localeCompare(b.at) : b.at.localeCompare(a.at));
+  const when = d => new Date(d).toLocaleString('fr-FR', { dateStyle:'short', timeStyle:'short' });
+  $('list').innerHTML = orders.map(o => {
+    const closed = ['cancelled','delivered'].includes(o.st);
+    return `<div class="order ${closed?'closed':''}">
+      <div class="oh"><div><div class="ref">#${esc(o.ref)}</div><div class="time">🕒 ${when(o.at)}</div></div>
+        ${closed?`<span class="pill" style="background:${o.st==='cancelled'?'var(--danger)':'#777'}">${o.st==='cancelled'?'⛔ ملغى — لا تجهّزه':OST[o.st]}</span>`:''}</div>
+      ${o.items.map(i => `<div class="item">
+          ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+          <div style="flex:1;min-width:0"><div class="iname">${esc(i.product_name)}</div>
+            <span class="pill" style="background:${PREP[i.prep_status][1]}">${PREP[i.prep_status][0]}</span></div>
+          <div class="qty">×${i.qty}</div></div>
+        ${closed?'':`<div class="acts">
+          ${i.prep_status==='pending'?`<button class="b-prep" onclick="setSt('${i.item_id}','preparing')">🧺 بدأت التجهيز</button>`:''}
+          ${i.prep_status!=='ready'?`<button class="b-ready" onclick="setSt('${i.item_id}','ready')">✅ جاهز للاستلام</button>`:''}
+          ${i.prep_status!=='pending'?`<button class="b-undo" onclick="setSt('${i.item_id}','${i.prep_status==='ready'?'preparing':'pending'}')" aria-label="تراجع">↩️ تراجع</button>`:''}
+        </div>`}`).join('')}
+    </div>`;
+  }).join('') || `<div class="empty">${filter==='todo'?'🎉 لا توجد طلبات بانتظار التجهيز':'لا شيء هنا'}</div>`;
+}
+
+async function setSt(item, st){
+  const { error } = await db.rpc('set_prep_status', { p_item: item, p_status: st });
+  if (error) return toast(/closed/.test(error.message) ? 'هذا الطلب أُغلق (ملغى أو تم توصيله)' : 'تعذّر التحديث: ' + error.message);
+  toast(st === 'ready' ? '✅ تم: جاهز للاستلام' : st === 'preparing' ? '🧺 قيد التجهيز' : 'تم التراجع');
+  const r = ROWS.find(x => x.item_id === item); if (r) r.prep_status = st;
+  render();
+}
+
+// تنبيه صوتي + اهتزاز + إشعار عند طلب جديد
+function beep(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, .25, .5].forEach((t, i) => { const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = [880, 1175, 1568][i]; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(.25, ctx.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + t + .22);
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .24); });
+  } catch (e) {}
+}
+function alertNew(n){
+  beep(); try { navigator.vibrate && navigator.vibrate([200,100,200]); } catch (e) {}
+  toast('🛎️ ' + (n > 1 ? n + ' طلبات جديدة' : 'طلب جديد') + '!');
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification('اشريلي — طلب جديد', { body: 'لديك ' + n + ' منتج بانتظار التجهيز', icon: 'icon-tent-192.png' }); } catch (e) {}
+  filter = 'todo';
+}
+async function askNotif(){
+  beep();
+  if (!('Notification' in window)) return toast('التنبيه الصوتي مفعّل ✅');
+  const p = await Notification.requestPermission();
+  toast(p === 'granted' ? 'التنبيهات مفعّلة ✅' : 'التنبيه الصوتي فقط (الإشعارات مرفوضة من المتصفح)');
+}
+
+(async () => { const { data: { session } } = await db.auth.getSession(); if (!session) show('auth', true); })();
+</script>
+</body>
+</html>
