@@ -340,11 +340,11 @@ async function loadSales(){
   const { data, error } = await db.rpc('celeb_sales');
   if (error || !data?.length) { $('vSales').innerHTML = '<div class="empty">تعذّر التحميل</div>'; return; }
   const s = data[0], c = Number(s.commission_percent || 0);
-  const net = Number(s.delivered_gross) * (1 - c / 100);
+  const net = Number(s.delivered_net);
   $('vSales').innerHTML = `
     <div class="stats">
       <div class="stat"><div class="k">مبيعات مُسلَّمة</div><div class="v">${fmt(s.delivered_gross)}</div></div>
-      <div class="stat"><div class="k">نصيبك بعد عمولة اشريلي (${c}%)</div><div class="v" style="color:var(--ok)">${fmt(Math.round(net))}</div></div>
+      <div class="stat"><div class="k">نصيبك بعد عمولة اشريلي (${c}% حالياً)</div><div class="v" style="color:var(--ok)">${fmt(Math.round(net))}</div></div>
       <div class="stat"><div class="k">طلبات مُسلَّمة</div><div class="v">${s.delivered_orders}</div></div>
       <div class="stat"><div class="k">قطع مباعة</div><div class="v">${s.delivered_items}</div></div>
       <div class="stat"><div class="k">طلبات جارية</div><div class="v">${s.open_orders}</div></div>

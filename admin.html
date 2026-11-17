@@ -200,6 +200,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
     <button data-t="products">🏷️ المنتجات</button>
     <button data-t="celebs">⭐ المشاهير</button>
     <button data-t="users">👥 المستخدمون</button>
+    <button data-t="profit">💰 الأرباح</button>
     <button data-t="partners">🏪 التجّار</button>
     <button data-t="errors">⚠️ الأخطاء</button>
   </nav></header>
@@ -269,8 +270,8 @@ async function onSignedIn(user){
   show('loading',false);
   if(!data || !['admin','staff'].includes(data.role)){ show('denied',true); return; }
   me={ id:user.id, name:data.full_name, role:data.role };
-  ['users','partners','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
-  if(me.role!=='admin' && ['users','partners','errors'].includes(tab)) tab='stats';
+  ['users','profit','partners','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
+  if(me.role!=='admin' && ['users','profit','partners','errors'].includes(tab)) tab='stats';
   show('app',true); go(tab);
 }
 function onSignedOut(){ me=null; ['app','denied','loading'].forEach(x=>show(x,false)); show('auth',true); $('lPw').value=''; }
@@ -286,7 +287,7 @@ function go(t){
   tab=t;
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   $('main').innerHTML='<div class="empty">⏳ جارٍ التحميل...</div>';
-  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers, partners:renderPartners, errors:renderErrors})[t]();
+  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers, profit:renderProfit, partners:renderPartners, errors:renderErrors})[t]();
   window.scrollTo(0,0);
 }
 function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
@@ -740,6 +741,42 @@ function celebAccount(cid){
     try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب المشهور ✅'); renderCelebs(); }
     catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
   };
+}
+/* ================== الأرباح (للمدير) ================== */
+let profitPeriod='month';
+function periodRange(p){
+  const n=new Date(), y=n.getFullYear(), mo=n.getMonth();
+  if(p==='month') return [new Date(y,mo,1), null];
+  if(p==='last') return [new Date(y,mo-1,1), new Date(y,mo,1)];
+  if(p==='year') return [new Date(y,0,1), null];
+  return [null,null];
+}
+async function renderProfit(){
+  const [f,t]=periodRange(profitPeriod);
+  const args={ p_from:f?f.toISOString():null, p_to:t?t.toISOString():null };
+  const [rep, ship] = await Promise.all([ db.rpc('admin_profit_report', args), db.rpc('admin_shipping_income', args) ]);
+  if(rep.error) return fail('تعذّر حساب الأرباح', rep.error);
+  const rows=rep.data||[], sum=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0);
+  const gross=sum('gross'), com=sum('commission'), pay=sum('payable'), sh=Number(ship.data||0);
+  const opts=[['month','هذا الشهر'],['last','الشهر الماضي'],['year','هذه السنة'],['all','منذ البداية']];
+  $('main').innerHTML=`
+    <div class="toolbar"><select class="grow" onchange="profitPeriod=this.value;go('profit')">
+      ${opts.map(([k,l])=>`<option value="${k}" ${k===profitPeriod?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="stats">
+      <div class="stat"><div class="k">💰 ربحك (عمولة + توصيل)</div><div class="v" style="color:#2E7D5B">${fmt(com+sh)}</div></div>
+      <div class="stat"><div class="k">مبيعات المنتجات (مُسلَّمة)</div><div class="v">${fmt(gross)}</div></div>
+      <div class="stat"><div class="k">عمولتك من المشاهير</div><div class="v">${fmt(com)}</div></div>
+      <div class="stat"><div class="k">دخل التوصيل</div><div class="v">${fmt(sh)}</div></div>
+      <div class="stat"><div class="k">مستحق للمشاهير</div><div class="v" style="color:#b7791f">${fmt(pay)}</div></div>
+      <div class="stat"><div class="k">طلبات مُسلَّمة</div><div class="v">${sum('orders')}</div></div>
+    </div>
+    <h3 style="margin:18px 0 8px">حسب المشهور</h3>
+    ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t" style="color:#2E7D5B">+${fmt(r.commission)}</span></div>
+      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · مبيعات ${fmt(r.gross)}<br>💸 تدفع له: <b>${fmt(r.payable)}</b></div></div>`).join('')
+      || '<div class="empty">لا توجد طلبات مُسلَّمة في هذه الفترة</div>'}
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
+      📌 تُحسب الأرباح على الطلبات بحالة <b>«تم التوصيل»</b> فقط. العمولة تُحفظ مع كل طلب لحظة الشراء، فتغيير نسبة مشهور لاحقاً لا يغيّر الأرباح السابقة.<br>
+      ⚠️ لا تشمل مصاريفك (أجرة الموصّل، الإعلانات، الاشتراكات): اطرحها لتعرف الربح الصافي.</div></div>`;
 }
 let MERCHANTS=[];
 async function loadMerchants(){
