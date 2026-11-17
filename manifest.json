@@ -13,8 +13,8 @@
   "theme_color": "#0E4D3A",
   "categories": ["shopping"],
   "icons": [
-    { "src": "icon-c-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-c-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-c-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icon-cs-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-cs-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-cs-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

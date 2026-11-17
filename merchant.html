@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>اشريلي — بوابة الشركاء</title>
 <meta name="theme-color" content="#0E4D3A">
-<link rel="icon" type="image/png" href="icon-c-192.png">
+<link rel="icon" type="image/png" href="icon-cs-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -130,7 +130,7 @@ const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TENT = '<svg viewBox="0 0 200 200" width="78%" height="78%" aria-hidden="true"><path d="M138 66 A54 54 0 1 0 138 138" fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"/><path d="M134 82 l8.2 11.8 11.8 8.2 -11.8 8.2 -8.2 11.8 -8.2 -11.8 -11.8 -8.2 11.8 -8.2z" fill="#D9A93F"/><path d="M160 65 l2.9 4.1 4.1 2.9 -4.1 2.9 -2.9 4.1 -2.9 -4.1 -4.1 -2.9 4.1 -2.9z" fill="#D9A93F"/></svg>';
+const TENT = '<svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg>';
 $('mk1').innerHTML = TENT; $('mk2').innerHTML = TENT;
 
 const PREP = { pending:['جديد — بانتظار التجهيز','#C99A2E'], preparing:['قيد التجهيز','#1f4e79'], ready:['جاهز للاستلام','#2E7D5B'] };
@@ -246,7 +246,7 @@ function beep(){
 function alertNew(n){
   beep(); try { navigator.vibrate && navigator.vibrate([200,100,200]); } catch (e) {}
   toast('🛎️ ' + (n > 1 ? n + ' طلبات جديدة' : 'طلب جديد') + '!');
-  try { if ('Notification' in window && Notification.permission === 'granted') new Notification('اشريلي — طلب جديد', { body: 'لديك ' + n + ' منتج بانتظار التجهيز', icon: 'icon-c-192.png' }); } catch (e) {}
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification('اشريلي — طلب جديد', { body: 'لديك ' + n + ' منتج بانتظار التجهيز', icon: 'icon-cs-192.png' }); } catch (e) {}
   filter = 'todo';
 }
 async function askNotif(){
