@@ -214,6 +214,28 @@ const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+/* ================== مراقبة الأخطاء ================== */
+const ERR = { n:0, seen:new Set() };
+function reportError(message, extra={}){
+  try{
+    const msg = String(message||'خطأ غير معروف').slice(0,500);
+    const key = msg.slice(0,120);
+    if(ERR.n >= 10 || ERR.seen.has(key)) return;   // حد أقصى 10 أخطاء مختلفة لكل زيارة
+    ERR.seen.add(key); ERR.n++;
+    db.from('app_errors').insert({
+      app: 'shop', message: msg,
+      source: String(extra.source||'').slice(0,300) || null,
+      line: Number.isFinite(extra.line) ? extra.line : null,
+      stack: String(extra.stack||'').slice(0,2000) || null,
+      page: (location.pathname + location.hash).slice(0,300),
+      user_agent: navigator.userAgent.slice(0,300)
+    }).then(()=>{}, ()=>{});
+  }catch(e){}
+}
+window.addEventListener('error', e => reportError(e.message || 'Script error', { source:e.filename, line:e.lineno, stack:e.error?.stack }));
+window.addEventListener('unhandledrejection', e => reportError('Promise: ' + (e.reason?.message || e.reason), { stack:e.reason?.stack }));
+
+
 /* ================== الحالة ================== */
 let me = null;            // { id, name, phone }
 let CELEBS = [];          // من جدول celebrities
@@ -271,6 +293,7 @@ async function doRegister(e){
   busy('rBtn',false,'إنشاء الحساب');
   if(error){
     if(/registered|exists/i.test(error.message)) return err('هذا الرقم مسجّل مسبقًا، سجّل الدخول');
+    reportError('signup: ' + error.message);
     return err('تعذّر إنشاء الحساب: ' + error.message);
   }
   if(!data.session) return err('تم إنشاء الحساب، لكن يجب إيقاف «Confirm email» في Supabase');
@@ -301,6 +324,7 @@ async function loadCatalog(){
     db.from('products').select('*').order('created_at')
   ]);
   if(c.error || p.error){
+    reportError('loadCatalog: ' + (c.error||p.error).message);
     document.getElementById('homeBody').innerHTML = `<div class="empty">تعذّر تحميل البيانات. تحقق من الاتصال ثم أعد فتح التطبيق.</div>`;
     return false;
   }
@@ -420,7 +444,7 @@ async function checkout(){
   busy('coBtn',true);
   const items=Object.entries(cart).map(([product_id,qty])=>({product_id,qty}));
   const { data: orderId, error } = await db.rpc('place_order', { items, p_address: addr });
-  if(error){ busy('coBtn',false,'تأكيد الطلب'); return toast('تعذّر تسجيل الطلب: '+error.message); }
+  if(error){ reportError('checkout: '+error.message); busy('coBtn',false,'تأكيد الطلب'); return toast('تعذّر تسجيل الطلب: '+error.message); }
   const { data: order } = await db.from('orders').select('total').eq('id',orderId).single();
   cart={}; saveCart();
   document.getElementById('doneBody').innerHTML=`<div class="big">✅</div><h2>تم استلام طلبك!</h2>
@@ -437,7 +461,7 @@ async function renderOrders(){
   const { data, error } = await db.from('orders')
     .select('id,total,status,created_at,address,order_items(qty,unit_price,products(name))')
     .order('created_at',{ascending:false});
-  if(error){ el.innerHTML=`<div class="empty">تعذّر تحميل الطلبات</div>`; return; }
+  if(error){ reportError('orders: '+error.message); el.innerHTML=`<div class="empty">تعذّر تحميل الطلبات</div>`; return; }
   if(!data.length){ el.innerHTML=`<div class="empty"><div style="font-size:54px">📦</div><p>لا توجد طلبات بعد</p></div>`; return; }
   el.innerHTML=data.map(o=>{ const s=STATUS[o.status]||[o.status,'#666']; return `
     <div class="summary" style="margin-top:0;margin-bottom:12px">

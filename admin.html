@@ -199,6 +199,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
     <button data-t="products">🏷️ المنتجات</button>
     <button data-t="celebs">⭐ المشاهير</button>
     <button data-t="users">👥 المستخدمون</button>
+    <button data-t="errors">⚠️ الأخطاء</button>
   </nav></header>
   <main class="wrap" id="main" style="padding-top:16px"></main>
 </div>
@@ -212,6 +213,28 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ================== مراقبة الأخطاء ================== */
+const ERR = { n:0, seen:new Set() };
+function reportError(message, extra={}){
+  try{
+    const msg = String(message||'خطأ غير معروف').slice(0,500);
+    const key = msg.slice(0,120);
+    if(ERR.n >= 10 || ERR.seen.has(key)) return;   // حد أقصى 10 أخطاء مختلفة لكل زيارة
+    ERR.seen.add(key); ERR.n++;
+    db.from('app_errors').insert({
+      app: 'admin', message: msg,
+      source: String(extra.source||'').slice(0,300) || null,
+      line: Number.isFinite(extra.line) ? extra.line : null,
+      stack: String(extra.stack||'').slice(0,2000) || null,
+      page: (location.pathname + location.hash).slice(0,300),
+      user_agent: navigator.userAgent.slice(0,300)
+    }).then(()=>{}, ()=>{});
+  }catch(e){}
+}
+window.addEventListener('error', e => reportError(e.message || 'Script error', { source:e.filename, line:e.lineno, stack:e.error?.stack }));
+window.addEventListener('unhandledrejection', e => reportError('Promise: ' + (e.reason?.message || e.reason), { stack:e.reason?.stack }));
+
 const BUCKET = 'product-images';
 
 let me=null, tab='stats', orderFilter='all', prodFilter='all', prodQ='';
@@ -244,9 +267,8 @@ async function onSignedIn(user){
   show('loading',false);
   if(!data || !['admin','staff'].includes(data.role)){ show('denied',true); return; }
   me={ id:user.id, name:data.full_name, role:data.role };
-  const usersTab=document.querySelector('#tabbar [data-t="users"]');
-  usersTab.classList.toggle('hidden', me.role!=='admin');
-  if(me.role!=='admin' && tab==='users') tab='stats';
+  ['users','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
+  if(me.role!=='admin' && ['users','errors'].includes(tab)) tab='stats';
   show('app',true); go(tab);
 }
 function onSignedOut(){ me=null; ['app','denied','loading'].forEach(x=>show(x,false)); show('auth',true); $('lPw').value=''; }
@@ -262,18 +284,19 @@ function go(t){
   tab=t;
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   $('main').innerHTML='<div class="empty">⏳ جارٍ التحميل...</div>';
-  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers})[t]();
+  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers, errors:renderErrors})[t]();
   window.scrollTo(0,0);
 }
-function fail(msg, error){ console.error(error); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
+function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
 
 /* ================== الإحصاءات ================== */
 async function renderStats(){
-  const [u, o, p, c] = await Promise.all([
+  const [u, o, p, c, er] = await Promise.all([
     me.role==='admin' ? db.from('profiles').select('id',{count:'exact',head:true}) : Promise.resolve({count:null}),
     db.from('orders').select('total,status,created_at'),
     db.from('products').select('id,stock,active'),
-    db.from('celebrities').select('id',{count:'exact',head:true})
+    db.from('celebrities').select('id',{count:'exact',head:true}),
+    me.role==='admin' ? db.from('app_errors').select('id',{count:'exact',head:true}).gte('created_at', new Date(Date.now()-7*864e5).toISOString()) : Promise.resolve({count:null})
   ]);
   if(o.error) return fail('تعذّر تحميل الإحصاءات', o.error);
   const orders=o.data, valid=orders.filter(x=>x.status!=='cancelled');
@@ -295,6 +318,7 @@ async function renderStats(){
       <div class="stat"><div class="k">✅ مبيعات تم توصيلها</div><div class="v">${Number(delivered).toLocaleString('fr-FR')} <small>أوقية</small></div></div>
       <div class="stat"><div class="k">⭐ المشاهير</div><div class="v">${c.count??0}</div></div>
       <div class="stat"><div class="k">🏷️ المنتجات</div><div class="v">${(p.data||[]).length}</div></div>
+      ${me.role==='admin'?`<div class="stat" style="cursor:pointer" onclick="go('errors')"><div class="k">🐞 أخطاء آخر 7 أيام</div><div class="v" style="color:${er.count?'var(--danger)':'#0f5c4d'}">${er.count??0}</div></div>`:''}
       <div class="stat"><div class="k">⚠️ مخزون منخفض (3 أو أقل)</div><div class="v" style="color:${low?'var(--danger)':'var(--ink)'}">${low}</div></div>
     </div>
     ${newN?`<button class="btn" style="max-width:320px" onclick="orderFilter='new';go('orders')">عرض الطلبات الجديدة (${newN})</button>`:''}`;
@@ -389,7 +413,7 @@ function editProduct(id){
       const { error } = id ? await db.from('products').update(row).eq('id',id) : await db.from('products').insert(row);
       if(error) throw error;
       closeSheet(); toast('تم الحفظ ✅'); renderProducts();
-    }catch(e){ busy(false); toast('تعذّر الحفظ: '+e.message); }
+    }catch(e){ busy(false); reportError('saveProduct: '+e.message); toast('تعذّر الحفظ: '+e.message); }
   };
 }
 
@@ -515,6 +539,42 @@ function setRole(id,role){
     const { error } = await db.from('profiles').update({role}).eq('id',id);
     if(error) return toast('تعذّر التحديث: '+error.message);
     toast(role==='staff'?'أصبح موظفاً ✅':'تمت إزالة الصلاحية'); renderUsers();
+  });
+}
+
+
+/* ================== الأخطاء (للمدير) ================== */
+async function renderErrors(){
+  const { data, error } = await db.from('app_errors').select('*').order('created_at',{ascending:false}).limit(500);
+  if(error) return fail('تعذّر تحميل الأخطاء', error);
+  const groups={};
+  data.forEach(e=>{
+    const k=e.app+'|'+e.message;
+    if(!groups[k]) groups[k]={...e, count:0, users:new Set(), first:e.created_at};
+    const g=groups[k]; g.count++; g.first=e.created_at; if(e.user_id) g.users.add(e.user_id);
+  });
+  const list=Object.values(groups).sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const when=d=>new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
+  $('main').innerHTML=`
+    <div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} خطأ مسجّل · ${list.length} نوع</span>
+      ${data.length?'<button class="sbtn dan" onclick="clearErrors()">🗑️ حذف الكل</button>':''}
+      <button class="sbtn" onclick="go('errors')">🔄 تحديث</button></div>
+    <div class="card" style="background:#e7f2ef"><div class="s" style="color:var(--ink)">
+      هنا تظهر الأخطاء التي تحدث عند الزبائن أو في لوحة التحكم تلقائياً. أرسل صورة هذه الصفحة إلى Claude ليصلحها.</div></div>
+    ${list.map(g=>`<div class="card">
+      <div class="hd"><span class="t" style="word-break:break-word">${esc(g.message)}</span>
+        <span class="pill" style="background:${g.count>5?'var(--danger)':'#b7791f'}">${g.count}×</span></div>
+      <div class="s">📱 ${g.app==='shop'?'التطبيق':'لوحة التحكم'} · 👥 ${g.users.size} مستخدم · آخر مرة: ${when(g.created_at)} · أول مرة: ${when(g.first)}<br>
+      📄 ${esc(g.page||'')}${g.source?' · '+esc(String(g.source).split('/').pop())+(g.line?':'+g.line:''):''}<br>
+      <span style="font-size:12px">${esc((g.user_agent||'').slice(0,90))}</span></div>
+      ${g.stack?`<details style="margin-top:6px"><summary class="s" style="cursor:pointer">التفاصيل التقنية</summary><pre dir="ltr" style="white-space:pre-wrap;font-size:11.5px;background:var(--bg);padding:8px;border-radius:8px">${esc(g.stack)}</pre></details>`:''}
+    </div>`).join('') || '<div class="empty">🎉 لا توجد أخطاء</div>'}`;
+}
+function clearErrors(){
+  confirmBox('حذف كل الأخطاء المسجّلة؟', async()=>{
+    const { error } = await db.from('app_errors').delete().gt('id',0);
+    if(error) return toast('تعذّر الحذف: '+error.message);
+    toast('تم الحذف'); go('errors');
   });
 }
 
