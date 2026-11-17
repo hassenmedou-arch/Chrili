@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>اشريلي Chrili</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1E1A16">
+<meta name="theme-color" content="#0E4D3A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="اشريلي">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@700&family=Montserrat:wght@600&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#FAF6EF; --card:#fff; --ink:#1d2321; --muted:#6b726f; --line:#E9E1D3;
-  --brand:#1E1A16; --brand2:#0E0C0A; --gold:#C9A24A; --danger:#c0392b;
+  --bg:#FBF7EE; --card:#fff; --ink:#1d2321; --muted:#6b726f; --line:#E9E1D3;
+  --brand:#0E4D3A; --brand2:#0A3A2C; --gold:#C99A2E; --danger:#c0392b;
   --r:18px; --shadow:0 6px 20px rgba(20,40,35,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -28,12 +28,12 @@ input{font-family:inherit}
 
 /* ---------- Auth ---------- */
 #auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
-  background:radial-gradient(circle at 80% 0%,rgba(201,162,74,.35) 0,transparent 50%),linear-gradient(160deg,var(--brand2),var(--brand))}
+  background:radial-gradient(circle at 80% 0%,rgba(201,154,46,.35) 0,transparent 50%),linear-gradient(160deg,var(--brand2),var(--brand))}
 .auth-card{background:var(--card);width:100%;max-width:400px;border-radius:24px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
 .logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px}
 .logo-mark{width:48px;height:48px;border-radius:14px;background:var(--brand);display:grid;place-items:center;font-size:26px}
-.logo h1{font-size:30px;font-weight:800;color:var(--brand)}
-.logo small{display:block;font-family:'Marcellus',serif;font-size:14px;color:var(--gold);font-weight:400;letter-spacing:5px}
+.logo h1{font-family:'Reem Kufi','Tajawal',sans-serif;font-size:32px;font-weight:700;color:var(--brand)}
+.logo small{display:block;font-family:'Montserrat',sans-serif;font-size:12px;color:var(--gold);font-weight:600;letter-spacing:5px}
 .tagline{text-align:center;color:var(--muted);margin-bottom:20px;font-size:15px}
 .tabs{display:flex;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:18px}
 .tabs button{flex:1;padding:10px;border-radius:10px;background:none;font-size:15px;font-weight:700;color:var(--muted)}
@@ -47,7 +47,7 @@ label{display:block;font-size:14px;font-weight:700;margin:12px 0 6px}
 .hint{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6}
 
 /* ---------- Top bar ---------- */
-header.top{position:sticky;top:0;z-index:20;background:rgba(250,246,239,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .top-in{max-width:960px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px}
 .top .logo{margin:0;justify-content:flex-start}
 .top .logo-mark{width:36px;height:36px;font-size:19px;border-radius:10px}
@@ -135,7 +135,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(250,246,239,.92);bac
 <!-- ===== شاشة الدخول ===== -->
 <section id="auth" class="hidden">
   <div class="auth-card">
-    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 150 150" width="62%" height="62%" aria-hidden="true"><path d="M118 30 A 60 60 0 1 0 118 120 A 48 48 0 1 1 118 30 Z" fill="#FAF5EC"/><path d="M100 63 L104 72 L114 75 L104 78 L100 87 L96 78 L86 75 L96 72 Z" fill="#C9A24A"/></svg></div><div><h1>اشريلي</h1><small>CHRILI</small></div></div>
+    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 118 104" width="66%" height="66%" aria-hidden="true"><path d="M59 4 L112 96 L6 96 Z" fill="#FBF7EE"/><path d="M59 4 L59 96" stroke="#C99A2E" stroke-width="5"/><path d="M30 70 L44 58 L59 70 L74 58 L88 70" fill="none" stroke="#C99A2E" stroke-width="5"/><path d="M48 96 Q59 74 70 96 Z" fill="#0E4D3A"/><circle cx="59" cy="5" r="5" fill="#C99A2E"/></svg></div><div><h1>اشريلي</h1><small>CHRILI</small></div></div>
     <p class="tagline">تسوّق مباشرة من واجهات مشاهيرك المفضلين</p>
     <div class="tabs">
       <button id="tabLogin" class="on" onclick="setTab('login')">تسجيل الدخول</button>
@@ -167,7 +167,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(250,246,239,.92);bac
 <!-- ===== التطبيق ===== -->
 <div id="app" class="hidden">
   <header class="top"><div class="top-in">
-    <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 150 150" width="62%" height="62%" aria-hidden="true"><path d="M118 30 A 60 60 0 1 0 118 120 A 48 48 0 1 1 118 30 Z" fill="#FAF5EC"/><path d="M100 63 L104 72 L114 75 L104 78 L100 87 L96 78 L86 75 L96 72 Z" fill="#C9A24A"/></svg></div><h1>اشريلي</h1></div>
+    <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 118 104" width="66%" height="66%" aria-hidden="true"><path d="M59 4 L112 96 L6 96 Z" fill="#FBF7EE"/><path d="M59 4 L59 96" stroke="#C99A2E" stroke-width="5"/><path d="M30 70 L44 58 L59 70 L74 58 L88 70" fill="none" stroke="#C99A2E" stroke-width="5"/><path d="M48 96 Q59 74 70 96 Z" fill="#0E4D3A"/><circle cx="59" cy="5" r="5" fill="#C99A2E"/></svg></div><h1>اشريلي</h1></div>
     <div class="spacer"></div>
     <button class="icon-btn" onclick="go('orders')" title="طلباتي">📦</button>
     <button class="icon-btn" onclick="go('cart')" title="السلة">🛒<span class="badge" id="badge">0</span></button>
@@ -243,7 +243,7 @@ let PRODUCTS = [];        // من جدول products
 let cart = {};            // { product_id: qty }
 let cat = 'الكل';
 
-const PALETTE = [['#8e2d5a','#c2547f'],['#1f4e79','#3b82c4'],['#a4511b','#e08a3c'],['#6b3fa0','#a274d6'],['#1E1A16','#2fa184'],['#7a6420','#d9a441']];
+const PALETTE = [['#8e2d5a','#c2547f'],['#1f4e79','#3b82c4'],['#a4511b','#e08a3c'],['#6b3fa0','#a274d6'],['#0E4D3A','#2fa184'],['#7a6420','#d9a441']];
 const CAT_EMOJI = {'ملابس تقليدية':'👗','إلكترونيات':'📱','مأكولات':'🍽️','تجميل وعطور':'💄','رياضة':'⚽','إكسسوارات':'✨'};
 const hash = s => [...String(s)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
 const colorOf = c => PALETTE[hash(c.id)%PALETTE.length];
