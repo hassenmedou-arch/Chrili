@@ -98,6 +98,7 @@ textarea.field{min-height:80px;resize:vertical}
   <header><div class="top">
     <div class="logo"><div class="logo-mark" id="mk2"></div><h1 id="portalTitle">بوابة التاجر</h1></div>
     <span class="spacer"></span>
+    <a class="ibtn" href="index.html?shop=1" aria-label="المتجر" style="display:grid;place-items:center;text-decoration:none">🛍️</a>
     <button class="ibtn" id="notifBtn" onclick="askNotif()" aria-label="تفعيل التنبيهات">🔔</button>
     <button class="ibtn" onclick="load(true)" aria-label="تحديث">🔄</button>
     <button class="ibtn" onclick="logout()" aria-label="خروج">⎋</button>
@@ -159,7 +160,9 @@ async function onSignedIn(user){
     db.from('merchants').select('id, name, active').eq('user_id', user.id).maybeSingle()
   ]);
   ['auth','denied','app'].forEach(x => show(x, false));
-  if (!['merchant','celebrity'].includes(p?.role) || !m || !m.active) { show('denied', true); return; }
+  if (['admin','staff'].includes(p?.role)) { location.replace('admin.html'); return; }
+  if (!['merchant','celebrity'].includes(p?.role)) { location.replace('index.html'); return; }
+  if (!m || !m.active) { show('denied', true); return; }
   me = { id: user.id, name: m.name };
   celebId = null;
   if (p.role === 'celebrity') { const r = await db.rpc('my_celebrity_id'); celebId = r.data || null; }
@@ -172,7 +175,7 @@ async function onSignedIn(user){
 }
 db.auth.onAuthStateChange((ev, session) => {
   if (session?.user) { if (!me || me.id !== session.user.id) setTimeout(() => onSignedIn(session.user), 0); }
-  else { me = null; clearInterval(timer); ['app','denied'].forEach(x => show(x, false)); show('auth', true); }
+  else { if (me) { location.replace('index.html'); return; } me = null; clearInterval(timer); ['app','denied'].forEach(x => show(x, false)); show('auth', true); }
 });
 
 async function load(manual){

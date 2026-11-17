@@ -191,7 +191,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
   <header class="top"><div class="top-in">
     <div class="logo"><div class="logo-mark"><svg viewBox="0 0 118 104" width="66%" height="66%" aria-hidden="true"><path d="M59 4 L112 96 L6 96 Z" fill="#FBF7EE"/><path d="M59 4 L59 96" stroke="#C99A2E" stroke-width="5"/><path d="M30 70 L44 58 L59 70 L74 58 L88 70" fill="none" stroke="#C99A2E" stroke-width="5"/><path d="M48 96 Q59 74 70 96 Z" fill="#0E4D3A"/><circle cx="59" cy="5" r="5" fill="#C99A2E"/></svg></div><h1>لوحة اشريلي</h1></div>
     <div class="spacer"></div>
-    <a class="icon-btn" href="./" title="فتح التطبيق" style="text-decoration:none">🛍️</a>
+    <a class="icon-btn" href="index.html?shop=1" title="المتجر" style="text-decoration:none">🛍️</a>
     <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
   </div>
   <nav class="tabbar" id="tabbar">
@@ -268,13 +268,14 @@ async function onSignedIn(user){
   show('auth',false); show('loading',true);
   const { data } = await db.from('profiles').select('full_name,role').eq('id',user.id).maybeSingle();
   show('loading',false);
-  if(!data || !['admin','staff'].includes(data.role)){ show('denied',true); return; }
+  if(data && ['merchant','celebrity'].includes(data.role)){ location.replace('merchant.html'); return; }
+  if(!data || !['admin','staff'].includes(data.role)){ location.replace('index.html'); return; }
   me={ id:user.id, name:data.full_name, role:data.role };
   ['users','profit','partners','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
   if(me.role!=='admin' && ['users','profit','partners','errors'].includes(tab)) tab='stats';
   show('app',true); go(tab);
 }
-function onSignedOut(){ me=null; ['app','denied','loading'].forEach(x=>show(x,false)); show('auth',true); $('lPw').value=''; }
+function onSignedOut(){ if(me){ location.replace('index.html'); return; } me=null; ['app','denied','loading'].forEach(x=>show(x,false)); show('auth',true); $('lPw').value=''; }
 
 db.auth.onAuthStateChange((ev, session)=>{
   if(session?.user){ if(!me || me.id!==session.user.id) setTimeout(()=>onSignedIn(session.user),0); }

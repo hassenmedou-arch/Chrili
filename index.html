@@ -169,6 +169,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
   <header class="top"><div class="top-in">
     <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 118 104" width="66%" height="66%" aria-hidden="true"><path d="M59 4 L112 96 L6 96 Z" fill="#FBF7EE"/><path d="M59 4 L59 96" stroke="#C99A2E" stroke-width="5"/><path d="M30 70 L44 58 L59 70 L74 58 L88 70" fill="none" stroke="#C99A2E" stroke-width="5"/><path d="M48 96 Q59 74 70 96 Z" fill="#0E4D3A"/><circle cx="59" cy="5" r="5" fill="#C99A2E"/></svg></div><h1>اشريلي</h1></div>
     <div class="spacer"></div>
+    <button class="icon-btn hidden" id="wsBtn" aria-label="واجهتي"></button>
     <button class="icon-btn" onclick="go('orders')" title="طلباتي">📦</button>
     <button class="icon-btn" onclick="go('cart')" title="السلة">🛒<span class="badge" id="badge">0</span></button>
     <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
@@ -299,9 +300,17 @@ async function doRegister(e){
   if(!data.session) return err('تم إنشاء الحساب، لكن يجب إيقاف «Confirm email» في Supabase');
 }
 
+const WORKSPACE = { admin:['admin.html','⚙️','لوحة التحكم'], staff:['admin.html','⚙️','لوحة التحكم'],
+  merchant:['merchant.html','🏪','بوابتي'], celebrity:['merchant.html','⭐','واجهتي'] };
 async function onSignedIn(user){
   const meta = user.user_metadata || {};
-  me = { id:user.id, name: meta.full_name || 'صديقنا', phone: meta.phone || '' };
+  const { data: prof } = await db.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const role = prof?.role || 'customer';
+  // تطبيق واحد: كل شخص يدخل إلى واجهته حسب دوره (إلا إذا طلب المتجر صراحة)
+  if (WORKSPACE[role] && !new URLSearchParams(location.search).has('shop')) { location.replace(WORKSPACE[role][0]); return; }
+  me = { id:user.id, name: meta.full_name || 'صديقنا', phone: meta.phone || '', role };
+  const wb = document.getElementById('wsBtn');
+  if (wb) { if (WORKSPACE[role]) { wb.textContent = WORKSPACE[role][1]; wb.title = WORKSPACE[role][2]; wb.onclick = () => location.href = WORKSPACE[role][0]; wb.classList.remove('hidden'); } else wb.classList.add('hidden'); }
   loadCart();
   show('loading',true); show('auth',false);
   const ok = await loadCatalog();
@@ -311,6 +320,7 @@ async function onSignedIn(user){
 
 function onSignedOut(){
   me=null; cart={};
+  if(location.search) history.replaceState(null,'',location.pathname);
   show('app',false); show('loading',false); show('auth',true);
   document.getElementById('lPw').value='';
 }
@@ -328,8 +338,8 @@ async function loadCatalog(){
     document.getElementById('homeBody').innerHTML = `<div class="empty">تعذّر تحميل البيانات. تحقق من الاتصال ثم أعد فتح التطبيق.</div>`;
     return false;
   }
-  CELEBS = c.data;
-  PRODUCTS = p.data.filter(x => CELEBS.some(c => c.id === x.celebrity_id)); // إخفاء منتجات المشاهير المخفيين
+  CELEBS = c.data.filter(x => x.active);
+  PRODUCTS = p.data.filter(x => x.active && (x.review_status||'approved') === 'approved' && CELEBS.some(c => c.id === x.celebrity_id)); // إخفاء منتجات المشاهير المخفيين
   // إزالة منتجات من السلة لم تعد متوفرة
   Object.keys(cart).forEach(id=>{ if(!P(id)) delete cart[id]; }); saveCart();
   return true;
