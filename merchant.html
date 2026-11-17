@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>اشريلي — بوابة التاجر</title>
+<title>اشريلي — بوابة الشركاء</title>
 <meta name="theme-color" content="#0E4D3A">
 <link rel="icon" type="image/png" href="icon-tent-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -53,6 +53,24 @@ header{position:sticky;top:0;z-index:10;background:rgba(251,247,238,.95);backdro
 .b-prep{background:#F4ECDB;color:var(--ink)}
 .b-ready{background:var(--ok);color:#fff}
 .b-undo{background:#fff;border:1px solid var(--line)!important;color:var(--muted);flex:0 0 auto!important;padding:0 14px}
+.views{display:flex;gap:8px;margin-top:12px}
+.views button{flex:1;min-height:48px;border-radius:14px;background:#fff;border:1.5px solid var(--line);font-weight:800;font-size:15px;color:var(--ink)}
+.views button.on{border-color:var(--brand);background:#E7F0EC;color:var(--brand)}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px;display:flex;gap:12px}
+.pcard .thumb{width:72px;height:72px}
+.price{color:var(--brand);font-weight:800}
+.sbtn{min-height:40px;padding:0 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)!important;font-weight:700;font-size:14px}
+.sbtn.pri{background:var(--brand);color:#fff;border-color:var(--brand)!important}
+.addbtn{width:100%;min-height:50px;border-radius:14px;background:var(--brand);color:#fff;font-weight:800;font-size:16px;margin-top:12px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+.stat .k{color:var(--muted);font-size:13px;font-weight:700}.stat .v{font-size:22px;font-weight:800;margin-top:4px}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:20px 18px 28px}
+.sheet h3{font-size:19px;margin-bottom:4px}
+textarea.field{min-height:80px;resize:vertical}
+.preview{width:100%;max-height:200px;object-fit:contain;border-radius:12px;margin-top:8px;background:var(--bg)}
+.hint{font-size:13px;color:var(--muted);line-height:1.6;margin-top:8px}
 .empty{text-align:center;color:var(--muted);padding:50px 10px;font-size:16px}
 .note{background:#F4ECDB;border-radius:14px;padding:12px;font-size:14px;line-height:1.7;margin-top:12px}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);background:#1d2321;color:#fff;padding:12px 18px;border-radius:12px;font-weight:700;transition:.25s;z-index:50;max-width:90vw;text-align:center}
@@ -63,8 +81,8 @@ header{position:sticky;top:0;z-index:10;background:rgba(251,247,238,.95);backdro
 
 <section id="auth" class="hidden">
   <div class="auth-card">
-    <div class="logo"><div class="logo-mark" id="mk1"></div><div><h1>اشريلي</h1><small>بوابة التاجر</small></div></div>
-    <p class="sub" style="text-align:center;margin-top:6px">ادخل لترى الطلبات التي عليك تجهيزها</p>
+    <div class="logo"><div class="logo-mark" id="mk1"></div><div><h1>اشريلي</h1><small>بوابة الشركاء: التجّار والمشاهير</small></div></div>
+    <p class="sub" style="text-align:center;margin-top:6px">ادخل لتدير منتجاتك وتجهّز طلباتك</p>
     <form id="loginForm">
       <label for="lPhone">رقم الهاتف</label><input class="field" id="lPhone" inputmode="numeric" autocomplete="username" placeholder="8 أرقام">
       <label for="lPw">كلمة المرور</label><input class="field" id="lPw" type="password" autocomplete="current-password">
@@ -74,11 +92,11 @@ header{position:sticky;top:0;z-index:10;background:rgba(251,247,238,.95);backdro
   </div>
 </section>
 
-<section id="denied" class="hidden"><div class="wrap"><div class="empty">⛔ هذا الحساب ليس حساب تاجر.<br><br><button class="ibtn" onclick="logout()">تسجيل الخروج</button></div></div></section>
+<section id="denied" class="hidden"><div class="wrap"><div class="empty">⛔ هذا الحساب ليس حساب تاجر أو مشهور.<br><br><button class="ibtn" onclick="logout()">تسجيل الخروج</button></div></div></section>
 
 <section id="app" class="hidden">
   <header><div class="top">
-    <div class="logo"><div class="logo-mark" id="mk2"></div><h1>بوابة التاجر</h1></div>
+    <div class="logo"><div class="logo-mark" id="mk2"></div><h1 id="portalTitle">بوابة التاجر</h1></div>
     <span class="spacer"></span>
     <button class="ibtn" id="notifBtn" onclick="askNotif()" aria-label="تفعيل التنبيهات">🔔</button>
     <button class="ibtn" onclick="load(true)" aria-label="تحديث">🔄</button>
@@ -86,12 +104,22 @@ header{position:sticky;top:0;z-index:10;background:rgba(251,247,238,.95);backdro
   </div></header>
   <div class="wrap">
     <div class="hello" id="hello"></div>
+    <nav class="views hidden" id="views">
+      <button data-v="orders" class="on" onclick="setView('orders')">📦 الطلبات</button>
+      <button data-v="products" onclick="setView('products')">🏷️ منتجاتي</button>
+      <button data-v="sales" onclick="setView('sales')">💰 مبيعاتي</button>
+    </nav>
+    <div id="vProducts" class="hidden"></div>
+    <div id="vSales" class="hidden"></div>
+    <div id="vOrders">
     <div class="sub" id="lastUpd"></div>
     <nav class="tabs" id="tabs"></nav>
     <div id="list"></div>
     <div class="note">📌 عند وصول طلب جديد: اضغط <b>«بدأت التجهيز»</b>، ثم <b>«جاهز للاستلام»</b> عندما يصبح جاهزاً. فريق اشريلي يرى ذلك مباشرة ويأتي لاستلامه.<br>🔔 اترك هذه الصفحة مفتوحة لتسمع تنبيهاً عند كل طلب جديد.</div>
+    </div>
   </div>
 </section>
+<div id="sheetRoot"></div>
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -106,7 +134,9 @@ $('mk1').innerHTML = TENT; $('mk2').innerHTML = TENT;
 
 const PREP = { pending:['جديد — بانتظار التجهيز','#C99A2E'], preparing:['قيد التجهيز','#1f4e79'], ready:['جاهز للاستلام','#2E7D5B'] };
 const OST = { new:'جديد', confirmed:'مؤكَّد', delivered:'تم التوصيل', cancelled:'ملغى' };
-let me = null, ROWS = [], filter = 'todo', known = null, timer = null;
+let me = null, ROWS = [], filter = 'todo', known = null, timer = null, celebId = null, MYP = [];
+const BUCKET = 'product-images';
+const fmt = n => Number(n||0).toLocaleString('fr-FR') + ' أوقية';
 
 function show(id, on){ $(id).classList.toggle('hidden', !on); }
 let tt; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2600); }
@@ -129,10 +159,14 @@ async function onSignedIn(user){
     db.from('merchants').select('id, name, active').eq('user_id', user.id).maybeSingle()
   ]);
   ['auth','denied','app'].forEach(x => show(x, false));
-  if (p?.role !== 'merchant' || !m || !m.active) { show('denied', true); return; }
+  if (!['merchant','celebrity'].includes(p?.role) || !m || !m.active) { show('denied', true); return; }
   me = { id: user.id, name: m.name };
+  celebId = null;
+  if (p.role === 'celebrity') { const r = await db.rpc('my_celebrity_id'); celebId = r.data || null; }
   $('hello').textContent = 'مرحباً ' + m.name + ' 👋';
-  show('app', true);
+  $('portalTitle').textContent = celebId ? 'واجهتي' : 'بوابة التاجر';
+  show('views', !!celebId);
+  show('app', true); setView('orders');
   await load(true);
   clearInterval(timer); timer = setInterval(() => load(false), 20000);
 }
@@ -217,6 +251,106 @@ async function askNotif(){
   if (!('Notification' in window)) return toast('التنبيه الصوتي مفعّل ✅');
   const p = await Notification.requestPermission();
   toast(p === 'granted' ? 'التنبيهات مفعّلة ✅' : 'التنبيه الصوتي فقط (الإشعارات مرفوضة من المتصفح)');
+}
+
+/* ===== المشهور: منتجاتي ومبيعاتي ===== */
+function setView(v){
+  document.querySelectorAll('#views button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  show('vOrders', v === 'orders'); show('vProducts', v === 'products'); show('vSales', v === 'sales');
+  if (v === 'products') loadProducts();
+  if (v === 'sales') loadSales();
+  window.scrollTo(0, 0);
+}
+function sheet(html){ $('sheetRoot').innerHTML = `<div class="sheet-bg"><div class="sheet">${html}</div></div>`; }
+function closeSheet(){ $('sheetRoot').innerHTML = ''; }
+function statusPill(p){
+  if (p.review_status === 'pending') return '<span class="pill" style="background:#b7791f">⏳ بانتظار موافقة اشريلي</span>';
+  if (p.review_status === 'rejected') return '<span class="pill" style="background:var(--danger)">❌ مرفوض</span>';
+  if (!p.active) return '<span class="pill" style="background:#888">🙈 مخفي</span>';
+  return '<span class="pill" style="background:var(--ok)">✅ منشور</span>';
+}
+async function loadProducts(){
+  $('vProducts').innerHTML = '<div class="empty">⏳</div>';
+  const { data, error } = await db.rpc('celeb_my_products');
+  if (error) { $('vProducts').innerHTML = `<div class="empty">تعذّر التحميل</div>`; return; }
+  MYP = data || [];
+  const pend = MYP.filter(p => p.review_status === 'pending' || p.pending_changes).length;
+  $('vProducts').innerHTML = `
+    <button class="addbtn" onclick="editP()">＋ إضافة منتج</button>
+    <div class="note">📝 كل منتج جديد أو تعديل في الاسم أو السعر أو الصورة يراجعه فريق اشريلي قبل أن يظهر للزبائن. تعديل <b>الكمية</b> يُطبَّق فوراً.${pend ? `<br>⏳ لديك <b>${pend}</b> بانتظار المراجعة.` : ''}</div>
+    ${MYP.map(p => `<div class="pcard">
+      ${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="">` : '<div class="thumb">🛍️</div>'}
+      <div style="flex:1;min-width:0">
+        <div class="iname">${esc(p.name)}</div>
+        <div><span class="price">${fmt(p.price)}</span> · الكمية: <b style="color:${p.stock <= 3 ? 'var(--danger)' : 'inherit'}">${p.stock}</b></div>
+        <div style="margin-top:4px">${statusPill(p)} ${p.pending_changes ? '<span class="pill" style="background:#1f4e79">✏️ تعديلات بانتظار الموافقة</span>' : ''}</div>
+        ${p.review_note ? `<div class="hint" style="color:var(--danger)">ملاحظة اشريلي: ${esc(p.review_note)}</div>` : ''}
+        <div class="acts" style="margin-top:8px">
+          <button class="sbtn" onclick="editP('${p.id}')">✏️ تعديل</button>
+          ${p.review_status === 'approved' ? `<button class="sbtn" onclick="toggleP('${p.id}',${!p.active})">${p.active ? '🙈 إخفاء' : '👁️ إظهار'}</button>` : ''}
+        </div></div></div>`).join('') || '<div class="empty">لا توجد منتجات بعد. أضف أول منتج 👆</div>'}`;
+}
+function editP(id){
+  const p = id ? MYP.find(x => x.id === id) : { name:'', description:'', price:'', stock:10, image_url:'' };
+  const pc = (p && p.pending_changes) || {};
+  const v = k => pc[k] !== undefined ? pc[k] : p[k];
+  sheet(`<h3>${id ? 'تعديل منتج' : 'منتج جديد'}</h3>
+    ${p.pending_changes ? '<p class="hint">تظهر هنا تعديلاتك التي تنتظر الموافقة.</p>' : ''}
+    <label>اسم المنتج</label><input class="field" id="fName" value="${esc(v('name'))}">
+    <label>الوصف</label><textarea class="field" id="fDesc">${esc(v('description') || '')}</textarea>
+    <label>السعر بالأوقية</label><input class="field" id="fPrice" inputmode="decimal" value="${esc(v('price'))}">
+    <label>الكمية المتوفرة</label><input class="field" id="fStock" inputmode="numeric" value="${esc(p.stock)}">
+    <label>صورة المنتج</label><input class="field" id="fImg" type="file" accept="image/*">
+    ${v('image_url') ? `<img class="preview" src="${esc(v('image_url'))}" alt="">` : ''}
+    <button class="btn" id="saveBtn">${id ? 'حفظ' : 'إرسال للمراجعة'}</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick = async () => {
+    const name = $('fName').value.trim(), desc = $('fDesc').value.trim();
+    const price = Number($('fPrice').value.replace(',', '.')), stock = parseInt($('fStock').value, 10);
+    if (name.length < 2) return toast('أدخل اسم المنتج');
+    if (!(price > 0)) return toast('أدخل سعراً صحيحاً');
+    if (!(stock >= 0)) return toast('أدخل كمية صحيحة');
+    const b = $('saveBtn'); b.disabled = true; b.textContent = '⏳ جارٍ الحفظ...';
+    try {
+      let img = null; const f = $('fImg').files[0];
+      if (f) {
+        if (f.size > 5 * 1024 * 1024) throw new Error('حجم الصورة أكبر من 5 ميغابايت');
+        const ext = (f.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const path = `celeb/${me.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const up = await db.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'image/jpeg' });
+        if (up.error) throw up.error;
+        img = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      }
+      const { error } = await db.rpc('celeb_save_product', { p_id: id || null, p_name: name, p_description: desc, p_price: price, p_stock: stock, p_image_url: img });
+      if (error) throw error;
+      closeSheet(); toast(id ? 'تم الحفظ ✅' : 'أُرسل المنتج للمراجعة ✅'); loadProducts();
+    } catch (e) {
+      b.disabled = false; b.textContent = id ? 'حفظ' : 'إرسال للمراجعة';
+      toast('تعذّر الحفظ: ' + (/api product/.test(e.message) ? 'هذا المنتج يأتي من متجرك المربوط' : e.message));
+    }
+  };
+}
+async function toggleP(id, val){
+  const { error } = await db.rpc('celeb_set_active', { p_id: id, p_active: val });
+  if (error) return toast('تعذّر التحديث');
+  toast(val ? 'أصبح ظاهراً للزبائن' : 'تم الإخفاء'); loadProducts();
+}
+async function loadSales(){
+  $('vSales').innerHTML = '<div class="empty">⏳</div>';
+  const { data, error } = await db.rpc('celeb_sales');
+  if (error || !data?.length) { $('vSales').innerHTML = '<div class="empty">تعذّر التحميل</div>'; return; }
+  const s = data[0], c = Number(s.commission_percent || 0);
+  const net = Number(s.delivered_gross) * (1 - c / 100);
+  $('vSales').innerHTML = `
+    <div class="stats">
+      <div class="stat"><div class="k">مبيعات مُسلَّمة</div><div class="v">${fmt(s.delivered_gross)}</div></div>
+      <div class="stat"><div class="k">نصيبك بعد عمولة اشريلي (${c}%)</div><div class="v" style="color:var(--ok)">${fmt(Math.round(net))}</div></div>
+      <div class="stat"><div class="k">طلبات مُسلَّمة</div><div class="v">${s.delivered_orders}</div></div>
+      <div class="stat"><div class="k">قطع مباعة</div><div class="v">${s.delivered_items}</div></div>
+      <div class="stat"><div class="k">طلبات جارية</div><div class="v">${s.open_orders}</div></div>
+      <div class="stat"><div class="k">قيمة الطلبات الجارية</div><div class="v">${fmt(s.open_gross)}</div></div>
+    </div>
+    <div class="note">💡 الأرقام تشمل منتجاتك فقط. «نصيبك» يُحسب على الطلبات التي تم توصيلها. سعر التوصيل غير محسوب.</div>`;
 }
 
 (async () => { const { data: { session } } = await db.auth.getSession(); if (!session) show('auth', true); })();

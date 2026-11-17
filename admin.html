@@ -370,21 +370,35 @@ async function loadCatalog(){
 async function renderProducts(){
   try{ await Promise.all([loadCatalog(), loadMerchants()]); }catch(e){ return fail('تعذّر تحميل المنتجات', e); }
   const cname=id=>CELEBS.find(c=>c.id===id)?.name||'—';
-  let list=PRODUCTS.filter(p=>(prodFilter==='all'||p.celebrity_id===prodFilter)&&(!prodQ||p.name.includes(prodQ)));
+  const needRev=p=>p.review_status==='pending'||!!p.pending_changes;
+  const revN=PRODUCTS.filter(needRev).length;
+  let list=PRODUCTS.filter(p=>(prodFilter==='all'||prodFilter==='review'?true:p.celebrity_id===prodFilter)&&(prodFilter!=='review'||needRev(p))&&(!prodQ||p.name.includes(prodQ)));
   $('main').innerHTML=`
     <div class="toolbar">
       <button class="sbtn pri" onclick="editProduct()">+ منتج جديد</button>
       <select onchange="prodFilter=this.value;renderProducts()"><option value="all">كل المشاهير</option>
+        <option value="review" ${prodFilter==='review'?'selected':''}>⏳ بانتظار المراجعة (${revN})</option>
         ${CELEBS.map(c=>`<option value="${c.id}" ${c.id===prodFilter?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
       <input class="grow" placeholder="🔎 بحث..." value="${esc(prodQ)}" onchange="prodQ=this.value.trim();renderProducts()">
     </div>
+    ${revN&&prodFilter!=='review'?`<div class="card" style="background:#FFF4DC;cursor:pointer" onclick="prodFilter='review';renderProducts()"><div class="s" style="color:var(--ink)">⏳ <b>${revN}</b> منتج أو تعديل من المشاهير ينتظر موافقتك — اضغط للمراجعة</div></div>`:''}
     ${!CELEBS.length?'<div class="empty">أضف مشهورًا أولاً من تبويب «المشاهير»</div>':''}
     ${list.map(p=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
         ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(p.name)}</div>
           <div class="s">${esc(cname(p.celebrity_id))} · <b style="color:var(--brand)">${fmt(p.price)}</b><br>
-          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}${p.merchant_id?' · 🏪 '+esc((MERCHANTS.find(m=>m.id===p.merchant_id)||{}).name||''):''}</div></div>
+          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}${p.merchant_id?' · 🏪 '+esc((MERCHANTS.find(m=>m.id===p.merchant_id)||{}).name||''):''}
+          ${p.review_status==='pending'?' · <span class="pill" style="background:#b7791f">⏳ منتج جديد بانتظار موافقتك</span>':''}
+          ${p.review_status==='rejected'?' · <span class="pill" style="background:var(--danger)">❌ مرفوض</span>':''}
+          ${p.pending_changes?' · <span class="pill" style="background:#1f4e79">✏️ تعديلات بانتظار موافقتك</span>':''}</div></div>
       </div>
+      ${p.pending_changes?`<div class="s" style="background:var(--bg);border-radius:10px;padding:8px;margin-top:8px;color:var(--ink)">التعديلات المطلوبة:<br>
+        ${p.pending_changes.name!==undefined?`الاسم: <s>${esc(p.name)}</s> ← <b>${esc(p.pending_changes.name)}</b><br>`:''}
+        ${p.pending_changes.price!==undefined?`السعر: <s>${fmt(p.price)}</s> ← <b>${fmt(p.pending_changes.price)}</b><br>`:''}
+        ${p.pending_changes.description!==undefined?`الوصف الجديد: ${esc(p.pending_changes.description)}<br>`:''}
+        ${p.pending_changes.image_url?`الصورة الجديدة:<br><img class="thumb" style="width:90px;height:90px" src="${esc(p.pending_changes.image_url)}" alt="">`:''}</div>`:''}
+      ${needRev(p)?`<div class="acts"><button class="sbtn pri" onclick="reviewP('${p.id}',true)">✅ موافقة ونشر</button>
+        <button class="sbtn dan" onclick="reviewP('${p.id}',false)">✕ رفض</button></div>`:''}
       <div class="acts"><button class="sbtn" onclick="editProduct('${p.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="toggleActive('products','${p.id}',${!p.active})">${p.active?'🙈 إخفاء':'👁️ إظهار'}</button>
         <button class="sbtn dan" onclick="delRow('products','${p.id}')">🗑️ حذف</button></div></div>`).join('')
@@ -392,7 +406,7 @@ async function renderProducts(){
 }
 function editProduct(id){
   if(!CELEBS.length) return toast('أضف مشهورًا أولاً');
-  const p=id?PRODUCTS.find(x=>x.id===id):{celebrity_id:prodFilter!=='all'?prodFilter:CELEBS[0].id,name:'',description:'',price:'',stock:10,active:true,image_url:''};
+  const p=id?PRODUCTS.find(x=>x.id===id):{celebrity_id:(prodFilter!=='all'&&prodFilter!=='review')?prodFilter:CELEBS[0].id,name:'',description:'',price:'',stock:10,active:true,image_url:''};
   sheet(`<h3>${id?'تعديل منتج':'منتج جديد'}</h3>
     ${p.source==='api'?'<p class="hint" style="color:var(--danger)">🔌 هذا المنتج يأتي من متجر التاجر: أي تعديل هنا سيُستبدل في المزامنة القادمة. عدّل السعر من إعدادات الربط.</p>':''}
     <label>المشهور صاحب المنتج</label>
@@ -435,9 +449,11 @@ async function renderCelebs(){
     ${CELEBS.map(c=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
         ${c.avatar_url?`<img class="thumb" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:'<div class="thumb" style="border-radius:50%">⭐</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(c.name)} ${c.active?'':'<span class="pill" style="background:#999">مخفي</span>'}</div>
-          <div class="s">${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات</div></div></div>
+          <div class="s">${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات · عمولتك ${Number(c.commission_percent??15)}%
+          ${c.owner_id?' · <span class="pill" style="background:#2E7D5B">🔑 يدير واجهته</span>':''}</div></div></div>
       <div class="acts"><button class="sbtn" onclick="editCeleb('${c.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="prodFilter='${c.id}';go('products')">🏷️ منتجاته</button>
+        ${me.role==='admin'&&!c.owner_id?`<button class="sbtn pri" onclick="celebAccount('${c.id}')">🔑 حساب ليدير واجهته</button>`:''}
         <button class="sbtn" onclick="toggleActive('celebrities','${c.id}',${!c.active})">${c.active?'🙈 إخفاء':'👁️ إظهار'}</button>
         <button class="sbtn dan" onclick="delRow('celebrities','${c.id}')">🗑️ حذف</button></div></div>`).join('')
       || '<div class="empty">لا يوجد مشاهير بعد</div>'}`;
@@ -451,6 +467,7 @@ function editCeleb(id){
     <label>الفئة</label><input class="field" id="fCat" list="catList" value="${esc(c.category||'')}" placeholder="مثال: عطور، ملابس تقليدية...">
     <datalist id="catList">${cats.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
     <label>عدد المتابعين (اختياري)</label><input class="field" id="fFol" value="${esc(c.followers||'')}" placeholder="مثال: 120K">
+    <label>عمولة اشريلي من مبيعاته (%)</label><input class="field" id="fCom" inputmode="decimal" value="${esc(c.commission_percent??15)}">
     <label>الصورة الشخصية</label><input class="field" id="fImg" type="file" accept="image/*">
     ${c.avatar_url?`<img class="preview" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:''}
     <label class="chk"><input type="checkbox" id="fActive" ${c.active?'checked':''}> ظاهر للزبائن</label>
@@ -458,8 +475,9 @@ function editCeleb(id){
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{
     const row={ name:$('fName').value.trim(), bio:$('fBio').value.trim()||null, category:$('fCat').value.trim()||null,
-      followers:$('fFol').value.trim()||null, active:$('fActive').checked };
+      followers:$('fFol').value.trim()||null, active:$('fActive').checked, commission_percent:Number($('fCom').value.replace(',','.')) };
     if(row.name.length<2) return toast('أدخل الاسم');
+    if(!(row.commission_percent>=0&&row.commission_percent<=100)) return toast('العمولة بين 0 و100%');
     busy(true);
     try{
       const url=await uploadImage($('fImg').files[0]); if(url) row.avatar_url=url;
@@ -689,6 +707,40 @@ function delPartner(id){
   });
 }
 
+async function reviewP(id, ok){
+  if(ok){
+    const { error } = await db.rpc('review_product',{p_id:id,p_approve:true,p_note:null});
+    if(error) return toast('تعذّر: '+error.message);
+    toast('تمت الموافقة ✅ وأصبح ظاهراً للزبائن'); return renderProducts();
+  }
+  sheet(`<h3>سبب الرفض</h3><p class="hint">يظهر للمشهور ليصحّح منتجه.</p>
+    <textarea id="rNote" placeholder="مثال: الصورة غير واضحة، أو السعر غير صحيح"></textarea>
+    <button class="btn" id="saveBtn" style="background:var(--danger)">رفض</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    busy(true);
+    const { error } = await db.rpc('review_product',{p_id:id,p_approve:false,p_note:$('rNote').value.trim()||null});
+    if(error){ busy(false); return toast('تعذّر: '+error.message); }
+    closeSheet(); toast('تم الرفض'); renderProducts();
+  };
+}
+function celebAccount(cid){
+  const c=CELEBS.find(x=>x.id===cid);
+  sheet(`<h3>حساب لـ ${esc(c.name)}</h3>
+    <p class="hint">يدخل المشهور إلى chrili.pages.dev/merchant.html فيضيف منتجاته ويعدّلها (بعد موافقتك)، ويجهّز طلباته، ويرى مبيعاته. لا يرى بيانات الزبائن.</p>
+    <label>رقم هاتفه (للدخول)</label><input class="field" id="cPhone" inputmode="numeric" placeholder="8 أرقام">
+    <label>كلمة المرور</label><input class="field" id="cPw" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+    <button class="btn" id="saveBtn">إنشاء الحساب</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const body={action:'create_celebrity',celebrity_id:cid,phone:$('cPhone').value.trim(),password:$('cPw').value};
+    if(!/^\d{8}$/.test(body.phone)) return toast('رقم الهاتف يجب أن يكون 8 أرقام');
+    if(body.password.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
+    const b=$('saveBtn'); b.disabled=true; b.textContent='⏳ جارٍ الإنشاء...';
+    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب المشهور ✅'); renderCelebs(); }
+    catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
+  };
+}
 let MERCHANTS=[];
 async function loadMerchants(){
   const { data, error } = await db.from('merchants').select('*').order('name');
