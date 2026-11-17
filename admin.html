@@ -199,6 +199,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
     <button data-t="products">🏷️ المنتجات</button>
     <button data-t="celebs">⭐ المشاهير</button>
     <button data-t="users">👥 المستخدمون</button>
+    <button data-t="partners">🔌 الربط</button>
     <button data-t="errors">⚠️ الأخطاء</button>
   </nav></header>
   <main class="wrap" id="main" style="padding-top:16px"></main>
@@ -267,8 +268,8 @@ async function onSignedIn(user){
   show('loading',false);
   if(!data || !['admin','staff'].includes(data.role)){ show('denied',true); return; }
   me={ id:user.id, name:data.full_name, role:data.role };
-  ['users','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
-  if(me.role!=='admin' && ['users','errors'].includes(tab)) tab='stats';
+  ['users','partners','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
+  if(me.role!=='admin' && ['users','partners','errors'].includes(tab)) tab='stats';
   show('app',true); go(tab);
 }
 function onSignedOut(){ me=null; ['app','denied','loading'].forEach(x=>show(x,false)); show('auth',true); $('lPw').value=''; }
@@ -284,7 +285,7 @@ function go(t){
   tab=t;
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   $('main').innerHTML='<div class="empty">⏳ جارٍ التحميل...</div>';
-  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers, errors:renderErrors})[t]();
+  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers, partners:renderPartners, errors:renderErrors})[t]();
   window.scrollTo(0,0);
 }
 function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
@@ -379,7 +380,7 @@ async function renderProducts(){
         ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(p.name)}</div>
           <div class="s">${esc(cname(p.celebrity_id))} · <b style="color:var(--brand)">${fmt(p.price)}</b><br>
-          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}</div></div>
+          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}</div></div>
       </div>
       <div class="acts"><button class="sbtn" onclick="editProduct('${p.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="toggleActive('products','${p.id}',${!p.active})">${p.active?'🙈 إخفاء':'👁️ إظهار'}</button>
@@ -390,6 +391,7 @@ function editProduct(id){
   if(!CELEBS.length) return toast('أضف مشهورًا أولاً');
   const p=id?PRODUCTS.find(x=>x.id===id):{celebrity_id:prodFilter!=='all'?prodFilter:CELEBS[0].id,name:'',description:'',price:'',stock:10,active:true,image_url:''};
   sheet(`<h3>${id?'تعديل منتج':'منتج جديد'}</h3>
+    ${p.source==='api'?'<p class="hint" style="color:var(--danger)">🔌 هذا المنتج يأتي من متجر التاجر: أي تعديل هنا سيُستبدل في المزامنة القادمة. عدّل السعر من إعدادات الربط.</p>':''}
     <label>المشهور صاحب المنتج</label>
     <select id="fCeleb">${CELEBS.map(c=>`<option value="${c.id}" ${c.id===p.celebrity_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     <label>اسم المنتج</label><input class="field" id="fName" value="${esc(p.name)}">
@@ -542,6 +544,124 @@ function setRole(id,role){
   });
 }
 
+
+
+/* ================== الربط بأنظمة التجّار (للمدير) ================== */
+let PARTNERS=[];
+const PLAT={shopify:'Shopify',woocommerce:'WooCommerce',json:'JSON (نظام خاص)'};
+async function renderPartners(){
+  try{ await loadCatalog(); }catch(e){ return fail('تعذّر تحميل المشاهير', e); }
+  const [{data,error},{data:logs}] = await Promise.all([
+    db.from('partners').select('*').order('created_at',{ascending:false}),
+    db.from('partner_sync_log').select('*').order('started_at',{ascending:false}).limit(30)
+  ]);
+  if(error) return fail('تعذّر تحميل التجّار', error);
+  PARTNERS=data;
+  const cname=id=>CELEBS.find(c=>c.id===id)?.name||'—';
+  const cnt=id=>PRODUCTS.filter(p=>p.partner_id===id).length;
+  const when=d=>d?new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'لم تتم بعد';
+  $('main').innerHTML=`
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
+      🔌 <b>اربط متجر تاجر بواجهة مشهور:</b> تُستورد منتجاته (الاسم، الصورة، السعر، المخزون) وتتحدّث تلقائياً.<br>
+      🔑 مفتاح الـAPI لا يُكتب هنا: ضعه في Supabase ← Edge Functions ← Secrets باسم يبدأ بـ <b dir="ltr">PARTNER_</b> واكتب الاسم فقط هنا.</div></div>
+    <div class="toolbar"><button class="sbtn pri" onclick="editPartner()">+ ربط تاجر</button>
+      ${data.length?'<button class="sbtn" onclick="syncAll()">🔄 مزامنة الكل</button>':''}
+      <span style="color:var(--muted);font-weight:700">${data.length} تاجر مربوط</span></div>
+    ${!CELEBS.length?'<div class="empty">أضف مشهورًا أولاً من تبويب «المشاهير»</div>':''}
+    ${data.map(p=>`<div class="card"><div class="hd"><span class="t">${esc(p.name)} ${p.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
+        <span class="pill" style="background:#1f4e79">${PLAT[p.platform]||p.platform}</span></div>
+      <div class="s">⭐ ${esc(cname(p.celebrity_id))} · 🏷️ ${cnt(p.id)} منتج · ✖️ السعر ×${p.price_multiplier}${Number(p.markup_percent)?' + '+p.markup_percent+'%':''}<br>
+        🕒 آخر مزامنة: ${when(p.last_sync_at)} ${p.last_sync_status?`<span class="pill" style="background:${p.last_sync_status==='ok'?'#2E7D5B':'var(--danger)'}">${p.last_sync_status==='ok'?'ناجحة':'فشلت'}</span>`:''}<br>
+        ${p.last_sync_message?`<span style="word-break:break-word">${esc(p.last_sync_message)}</span>`:''}</div>
+      <div class="acts"><button class="sbtn" onclick="testPartner('${p.id}')">🧪 اختبار</button>
+        <button class="sbtn pri" onclick="syncPartner('${p.id}')">🔄 مزامنة الآن</button>
+        <button class="sbtn" onclick="editPartner('${p.id}')">✏️ تعديل</button>
+        <button class="sbtn dan" onclick="delPartner('${p.id}')">🗑️ حذف</button></div></div>`).join('')
+      || (CELEBS.length?'<div class="empty">لا يوجد تاجر مربوط بعد</div>':'')}
+    ${logs?.length?`<h3 style="margin:18px 0 8px">سجل المزامنة</h3>${logs.map(l=>`<div class="card"><div class="s">
+      ${l.status==='ok'?'✅':l.status==='error'?'❌':'⏳'} <b>${esc((data.find(p=>p.id===l.partner_id)||{}).name||'')}</b> · ${when(l.started_at)}<br>${esc(l.message||'')}</div></div>`).join('')}`:''}`;
+}
+function editPartner(id){
+  if(!CELEBS.length) return toast('أضف مشهورًا أولاً');
+  const p=id?PARTNERS.find(x=>x.id===id):{name:'',platform:'shopify',base_url:'https://',celebrity_id:CELEBS[0].id,secret_name:'',price_multiplier:1,markup_percent:0,deactivate_missing:true,active:true,field_map:{}};
+  sheet(`<h3>${id?'تعديل الربط':'ربط تاجر جديد'}</h3>
+    <label>اسم التاجر</label><input class="field" id="pName" value="${esc(p.name)}">
+    <label>نظام متجره</label><select id="pPlat">${Object.entries(PLAT).map(([k,v])=>`<option value="${k}" ${k===p.platform?'selected':''}>${v}</option>`).join('')}</select>
+    <label>رابط المتجر / الـAPI</label><input class="field" id="pUrl" dir="ltr" value="${esc(p.base_url)}" placeholder="https://store.myshopify.com">
+    <p class="hint" id="pHint"></p>
+    <label>واجهة المشهور التي تظهر فيها المنتجات</label>
+    <select id="pCeleb">${CELEBS.map(c=>`<option value="${c.id}" ${c.id===p.celebrity_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    <label>اسم المفتاح في أسرار Supabase</label><input class="field" id="pSecret" dir="ltr" value="${esc(p.secret_name||'')}" placeholder="PARTNER_ZARA_KEY">
+    <label>معامل تحويل السعر (مثلاً من الدولار إلى الأوقية)</label><input class="field" id="pMul" inputmode="decimal" value="${esc(p.price_multiplier)}">
+    <label>عمولتك تُضاف على السعر (%)</label><input class="field" id="pMk" inputmode="decimal" value="${esc(p.markup_percent)}">
+    <div id="pMapBox"><label>ربط الحقول (JSON) — للنظام الخاص فقط</label>
+      <textarea id="pMap" dir="ltr" style="font-family:monospace;font-size:13px">${esc(JSON.stringify(p.field_map||{},null,1))}</textarea></div>
+    <label class="chk"><input type="checkbox" id="pDeact" ${p.deactivate_missing?'checked':''}> أخفِ المنتجات التي يحذفها التاجر من متجره</label>
+    <label class="chk"><input type="checkbox" id="pAct" ${p.active?'checked':''}> الربط مفعّل</label>
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  const hints={shopify:'Shopify: رابط المتجر مثل https://store.myshopify.com، والمفتاح هو Admin API access token (صلاحية قراءة المنتجات).',
+    woocommerce:'WooCommerce: رابط الموقع مثل https://shop.com، والمفتاح بالشكل consumer_key:consumer_secret (صلاحية Read).',
+    json:'نظام خاص: رابط يُرجع قائمة منتجات JSON. حدّد أسماء الحقول، مثال: {"list":"data","id":"sku","name":"title","price":"price","stock":"qty","image":"img"}'};
+  const upd=()=>{ $('pHint').textContent=hints[$('pPlat').value]; $('pMapBox').style.display=$('pPlat').value==='json'?'':'none'; };
+  $('pPlat').onchange=upd; upd();
+  $('saveBtn').onclick=async()=>{
+    let fm={}; try{ fm=JSON.parse($('pMap').value.trim()||'{}'); if(typeof fm!=='object'||Array.isArray(fm)) throw 0; }catch(e){ return toast('ربط الحقول ليس JSON صحيحاً'); }
+    const row={ name:$('pName').value.trim(), platform:$('pPlat').value, base_url:$('pUrl').value.trim(), celebrity_id:$('pCeleb').value,
+      secret_name:$('pSecret').value.trim().toUpperCase()||null, price_multiplier:Number($('pMul').value.replace(',','.')),
+      markup_percent:Number($('pMk').value.replace(',','.')), field_map:fm, deactivate_missing:$('pDeact').checked, active:$('pAct').checked };
+    if(row.name.length<2) return toast('أدخل اسم التاجر');
+    if(!/^https:\/\/[^\s]+\.[^\s]+/.test(row.base_url)) return toast('الرابط يجب أن يبدأ بـ https://');
+    if(row.secret_name && !/^PARTNER_[A-Z0-9_]{2,60}$/.test(row.secret_name)) return toast('اسم المفتاح يجب أن يبدأ بـ PARTNER_ وبحروف إنجليزية كبيرة وأرقام');
+    if(row.platform!=='json' && !row.secret_name) return toast('هذا النظام يحتاج اسم مفتاح');
+    if(!(row.price_multiplier>0)) return toast('معامل السعر يجب أن يكون أكبر من 0');
+    if(!(row.markup_percent>=0 && row.markup_percent<=500)) return toast('العمولة بين 0 و500%');
+    busy(true);
+    const { error } = id ? await db.from('partners').update(row).eq('id',id) : await db.from('partners').insert(row);
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
+    closeSheet(); toast('تم الحفظ ✅ — اضغط «اختبار» للتأكد من الاتصال'); renderPartners();
+  };
+}
+async function callSync(body){
+  const { data, error } = await db.functions.invoke('partner-sync', { body });
+  if(error){ let msg=error.message; try{ const j=await error.context.json(); if(j?.error) msg=j.error; }catch(e){} throw new Error(msg); }
+  if(data?.error) throw new Error(data.error);
+  return data;
+}
+async function testPartner(id){
+  toast('⏳ جارٍ الاتصال بمتجر التاجر...');
+  try{
+    const r=await callSync({action:'test',id});
+    sheet(`<h3>🧪 نتيجة الاختبار</h3><p class="s">✅ الاتصال ناجح: وُجد <b>${r.count}</b> منتج صالح. أمثلة (لم يُحفظ شيء بعد):</p>
+      ${r.sample.map(i=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
+        ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+        <div style="flex:1;min-width:0"><div class="t">${esc(i.name)}</div>
+        <div class="s">سعر التاجر: ${esc(i.price)} ← في اشريلي: <b style="color:var(--brand)">${fmt(i.final_price)}</b> · المخزون: ${i.stock}${i.available?'':' · غير متوفر'}</div></div></div></div>`).join('')}
+      <button class="btn" onclick="closeSheet();syncPartner('${id}')">🔄 استورد المنتجات الآن</button>
+      <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إغلاق</button>`);
+  }catch(e){ reportError('testPartner: '+e.message); toast('❌ فشل الاختبار: '+e.message); }
+}
+async function syncPartner(id){
+  toast('⏳ جارٍ المزامنة... قد تأخذ دقيقة');
+  try{ const r=await callSync({action:'sync',id}); toast((r.ok?'✅ ':'❌ ')+r.message); }
+  catch(e){ reportError('syncPartner: '+e.message); toast('❌ '+e.message); }
+  if(tab==='partners') renderPartners();
+}
+async function syncAll(){
+  toast('⏳ جارٍ مزامنة كل التجّار...');
+  try{ const r=await callSync({action:'sync_all'}); const bad=r.results.filter(x=>!x.ok).length; toast(bad?`❌ فشل ${bad} من ${r.results.length}`:`✅ تمت مزامنة ${r.results.length} تاجر`); }
+  catch(e){ toast('❌ '+e.message); }
+  renderPartners();
+}
+function delPartner(id){
+  confirmBox('حذف هذا الربط؟ المنتجات المستوردة تبقى وتصبح منتجات عادية تعدّلها يدوياً.', async()=>{
+    const u = await db.from('products').update({source:'manual'}).eq('partner_id',id);
+    if(u.error) return toast('تعذّر الحذف: '+u.error.message);
+    const { error } = await db.from('partners').delete().eq('id',id);
+    if(error) return toast('تعذّر الحذف: '+error.message);
+    toast('تم حذف الربط'); renderPartners();
+  });
+}
 
 /* ================== الأخطاء (للمدير) ================== */
 async function renderErrors(){
