@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.chrili.app",
+        "sha256_cert_fingerprints": ["3B:60:7F:F7:A6:FB:14:82:E8:D6:18:6E:F8:9B:88:73:24:2D:D3:10:BA:F4:A6:B4:C8:76:86:0E:EE:F8:4F:A7"]
+      }
+    }]
