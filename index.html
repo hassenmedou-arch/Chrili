@@ -51,7 +51,8 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 .top-in{max-width:960px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px}
 .top .logo{margin:0;justify-content:flex-start}
 .top .logo-mark{width:36px;height:36px;font-size:19px;border-radius:10px}
-.top .logo h1{font-size:22px}
+.top .logo h1{font-size:22px;line-height:1.05}
+.top .logo small{font-size:10.5px;letter-spacing:4px}
 .spacer{flex:1}
 .icon-btn{position:relative;width:42px;height:42px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:19px;display:grid;place-items:center}
 .badge{position:absolute;top:-6px;left:-6px;background:var(--gold);color:#1d2321;font-size:12px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 5px}
@@ -167,7 +168,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 <!-- ===== التطبيق ===== -->
 <div id="app" class="hidden">
   <header class="top"><div class="top-in">
-    <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 200 200" width="78%" height="78%" aria-hidden="true"><path d="M138 66 A54 54 0 1 0 138 138" fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"/><path d="M134 82 l8.2 11.8 11.8 8.2 -11.8 8.2 -8.2 11.8 -8.2 -11.8 -11.8 -8.2 11.8 -8.2z" fill="#D9A93F"/><path d="M160 65 l2.9 4.1 4.1 2.9 -4.1 2.9 -2.9 4.1 -2.9 -4.1 -4.1 -2.9 4.1 -2.9z" fill="#D9A93F"/></svg></div><h1>اشريلي</h1></div>
+    <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 200 200" width="78%" height="78%" aria-hidden="true"><path d="M138 66 A54 54 0 1 0 138 138" fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"/><path d="M134 82 l8.2 11.8 11.8 8.2 -11.8 8.2 -8.2 11.8 -8.2 -11.8 -11.8 -8.2 11.8 -8.2z" fill="#D9A93F"/><path d="M160 65 l2.9 4.1 4.1 2.9 -4.1 2.9 -2.9 4.1 -2.9 -4.1 -4.1 -2.9 4.1 -2.9z" fill="#D9A93F"/></svg></div><div><h1>اشريلي</h1><small>CHRILI</small></div></div>
     <div class="spacer"></div>
     <button class="icon-btn hidden" id="wsBtn" aria-label="واجهتي"></button>
     <button class="icon-btn" onclick="go('orders')" title="طلباتي">📦</button>
