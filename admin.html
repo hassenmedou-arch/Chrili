@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>لوحة تحكم اشريلي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f6f3ee; --card:#fff; --ink:#1d2321; --muted:#6b726f; --line:#e7e1d8;
-  --brand:#0f5c4d; --brand2:#0b4439; --gold:#d9a441; --danger:#c0392b;
+  --bg:#FAF6EF; --card:#fff; --ink:#1d2321; --muted:#6b726f; --line:#E9E1D3;
+  --brand:#1E1A16; --brand2:#0E0C0A; --gold:#C9A24A; --danger:#c0392b;
   --r:18px; --shadow:0 6px 20px rgba(20,40,35,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -21,12 +21,12 @@ input{font-family:inherit}
 
 /* ---------- Auth ---------- */
 #auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
-  background:radial-gradient(circle at 80% 0%,#1a7a66 0,transparent 50%),linear-gradient(160deg,var(--brand2),var(--brand))}
+  background:radial-gradient(circle at 80% 0%,rgba(201,162,74,.35) 0,transparent 50%),linear-gradient(160deg,var(--brand2),var(--brand))}
 .auth-card{background:var(--card);width:100%;max-width:400px;border-radius:24px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
 .logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px}
-.logo-mark{width:48px;height:48px;border-radius:14px;background:var(--gold);display:grid;place-items:center;font-size:26px}
+.logo-mark{width:48px;height:48px;border-radius:14px;background:var(--brand);display:grid;place-items:center;font-size:26px}
 .logo h1{font-size:30px;font-weight:800;color:var(--brand)}
-.logo small{display:block;font-size:13px;color:var(--muted);font-weight:500;letter-spacing:1px}
+.logo small{display:block;font-family:'Marcellus',serif;font-size:14px;color:var(--gold);font-weight:400;letter-spacing:5px}
 .tagline{text-align:center;color:var(--muted);margin-bottom:20px;font-size:15px}
 .tabs{display:flex;background:var(--bg);border-radius:12px;padding:4px;margin-bottom:18px}
 .tabs button{flex:1;padding:10px;border-radius:10px;background:none;font-size:15px;font-weight:700;color:var(--muted)}
@@ -40,7 +40,7 @@ label{display:block;font-size:14px;font-weight:700;margin:12px 0 6px}
 .hint{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6}
 
 /* ---------- Top bar ---------- */
-header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header.top{position:sticky;top:0;z-index:20;background:rgba(250,246,239,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .top-in{max-width:960px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px}
 .top .logo{margin:0;justify-content:flex-start}
 .top .logo-mark{width:36px;height:36px;font-size:19px;border-radius:10px}
@@ -85,7 +85,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
 .price{font-size:17px;font-weight:800;color:var(--brand);margin-top:8px}
 .price small{font-size:12px;font-weight:500;color:var(--muted)}
 .add{margin-top:10px;padding:10px;border-radius:10px;background:var(--brand);color:#fff;font-weight:700;font-size:14px}
-.add.in{background:#e7f2ef;color:var(--brand)}
+.add.in{background:#F4ECDB;color:var(--brand)}
 
 /* ---------- Cart ---------- */
 .cart-item{display:flex;gap:12px;align-items:center;background:#fff;border-radius:16px;padding:12px;box-shadow:var(--shadow);margin-bottom:10px}
@@ -162,7 +162,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
 <!-- ===== دخول المدير ===== -->
 <section id="auth" class="hidden">
   <div class="auth-card">
-    <div class="logo"><div class="logo-mark">⚙️</div><div><h1>اشريلي</h1><small>لوحة التحكم</small></div></div>
+    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 150 150" width="62%" height="62%" aria-hidden="true"><path d="M118 30 A 60 60 0 1 0 118 120 A 48 48 0 1 1 118 30 Z" fill="#FAF5EC"/><path d="M100 63 L104 72 L114 75 L104 78 L100 87 L96 78 L86 75 L96 72 Z" fill="#C9A24A"/></svg></div><div><h1>اشريلي</h1><small style="font-family:Tajawal,sans-serif;letter-spacing:0">لوحة التحكم</small></div></div>
     <p class="tagline">دخول خاص بمدير التطبيق</p>
     <form onsubmit="doLogin(event)">
       <label>رقم الهاتف</label>
@@ -188,7 +188,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(246,243,238,.92);bac
 <!-- ===== اللوحة ===== -->
 <div id="app" class="hidden">
   <header class="top"><div class="top-in">
-    <div class="logo"><div class="logo-mark">⚙️</div><h1>لوحة اشريلي</h1></div>
+    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 150 150" width="62%" height="62%" aria-hidden="true"><path d="M118 30 A 60 60 0 1 0 118 120 A 48 48 0 1 1 118 30 Z" fill="#FAF5EC"/><path d="M100 63 L104 72 L114 75 L104 78 L100 87 L96 78 L86 75 L96 72 Z" fill="#C9A24A"/></svg></div><h1>لوحة اشريلي</h1></div>
     <div class="spacer"></div>
     <a class="icon-btn" href="./" title="فتح التطبيق" style="text-decoration:none">🛍️</a>
     <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
@@ -245,7 +245,7 @@ const show = (id,on) => $(id).classList.toggle('hidden',!on);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const fmt = n => Number(n||0).toLocaleString('fr-FR') + ' أوقية';
 const day = d => new Date(d).toLocaleDateString('fr-FR');
-const STATUS = { new:['جديد','#d9a441'], confirmed:['مؤكَّد','#1f4e79'], delivered:['تم التوصيل','#0f5c4d'], cancelled:['ملغى','#c0392b'] };
+const STATUS = { new:['جديد','#d9a441'], confirmed:['مؤكَّد','#1f4e79'], delivered:['تم التوصيل','#2E7D5B'], cancelled:['ملغى','#c0392b'] };
 const pill = s => { const x=STATUS[s]||[s,'#666']; return `<span class="pill" style="background:${x[1]}">${x[0]}</span>`; };
 const shortId = id => id.slice(0,8).toUpperCase();
 
@@ -307,7 +307,7 @@ async function renderStats(){
   const newN=orders.filter(x=>x.status==='new').length;
   const low=(p.data||[]).filter(x=>x.active && x.stock<=3).length;
   $('main').innerHTML=`
-    <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#0f5c4d':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
+    <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#1E1A16':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
     <p class="sub">نظرة سريعة على تطبيقك</p>
     <div class="stats">
       ${me.role==='admin'?`<div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
@@ -318,7 +318,7 @@ async function renderStats(){
       <div class="stat"><div class="k">✅ مبيعات تم توصيلها</div><div class="v">${Number(delivered).toLocaleString('fr-FR')} <small>أوقية</small></div></div>
       <div class="stat"><div class="k">⭐ المشاهير</div><div class="v">${c.count??0}</div></div>
       <div class="stat"><div class="k">🏷️ المنتجات</div><div class="v">${(p.data||[]).length}</div></div>
-      ${me.role==='admin'?`<div class="stat" style="cursor:pointer" onclick="go('errors')"><div class="k">🐞 أخطاء آخر 7 أيام</div><div class="v" style="color:${er.count?'var(--danger)':'#0f5c4d'}">${er.count??0}</div></div>`:''}
+      ${me.role==='admin'?`<div class="stat" style="cursor:pointer" onclick="go('errors')"><div class="k">🐞 أخطاء آخر 7 أيام</div><div class="v" style="color:${er.count?'var(--danger)':'#1E1A16'}">${er.count??0}</div></div>`:''}
       <div class="stat"><div class="k">⚠️ مخزون منخفض (3 أو أقل)</div><div class="v" style="color:${low?'var(--danger)':'var(--ink)'}">${low}</div></div>
     </div>
     ${newN?`<button class="btn" style="max-width:320px" onclick="orderFilter='new';go('orders')">عرض الطلبات الجديدة (${newN})</button>`:''}`;
@@ -466,11 +466,11 @@ function editCeleb(id){
 async function renderUsers(){
   const { data, error } = await db.from('profiles').select('id,full_name,phone,role,created_at').order('created_at',{ascending:false});
   if(error) return fail('تعذّر تحميل المستخدمين', error);
-  const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#0f5c4d'};
+  const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#1E1A16'};
   USERS=data;
   const admins=data.filter(u=>u.role==='staff').length;
   $('main').innerHTML=`<div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} مستخدم مسجّل · ${admins} موظف</span></div>
-    <div class="card" style="background:#e7f2ef"><div class="s" style="color:var(--ink)">
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       ➕ <b>لإضافة شخص:</b> اضغط «إضافة مستخدم»، واختر «زبون» أو «موظف»، ثم أعطه رقمه وكلمة المرور ليدخل بهما.<br>👷 الموظف يدير الطلبات والمنتجات والمشاهير، ولا يرى المستخدمين ولا يمنح الصلاحيات. أنت وحدك ترى كل شيء.</div></div>
     <div class="toolbar"><button class="sbtn pri" onclick="addUser()">+ إضافة مستخدم</button>
       <input class="grow" id="uq" placeholder="🔎 ابحث بالاسم أو الهاتف..." oninput="filterUsers()"></div>
@@ -559,7 +559,7 @@ async function renderErrors(){
     <div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} خطأ مسجّل · ${list.length} نوع</span>
       ${data.length?'<button class="sbtn dan" onclick="clearErrors()">🗑️ حذف الكل</button>':''}
       <button class="sbtn" onclick="go('errors')">🔄 تحديث</button></div>
-    <div class="card" style="background:#e7f2ef"><div class="s" style="color:var(--ink)">
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       هنا تظهر الأخطاء التي تحدث عند الزبائن أو في لوحة التحكم تلقائياً. أرسل صورة هذه الصفحة إلى Claude ليصلحها.</div></div>
     ${list.map(g=>`<div class="card">
       <div class="hd"><span class="t" style="word-break:break-word">${esc(g.message)}</span>
