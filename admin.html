@@ -214,6 +214,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 <div id="sheetRoot"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="studio.js"></script>
 <script>
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
@@ -490,6 +491,8 @@ async function renderCatalog(){
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink);line-height:1.8">
       📚 <b>منتج واحد في الكتالوج</b> (P…) ← <b>مرجع لكل مورّد</b> (F…-P…: السعر والمخزون) ← <b>عرض لكل مؤثّر</b> (I…·F…-P…).<br>
       المؤثّرون الذين يعرضون نفس المرجع <b>يتقاسمون نفس المخزون</b>، ومبيعات كل واحد تُسجَّل باسمه.</div></div>
+    ${me.role==='admin'?`<div class="card"><div class="s" style="color:var(--ink)">🎨 كل صورة جديدة توضع تلقائياً على <b>خلفية اشريلي الموحّدة</b>.</div>
+      <div class="acts"><button class="sbtn pri" onclick="restudioAll()">🎨 توحيد خلفية كل الصور الحالية</button></div></div>`:''}
     <div class="toolbar"><button class="sbtn pri" onclick="editCatProd()">+ منتج في الكتالوج</button>
       <button class="sbtn" onclick="editCategory()">+ فئة</button>
       <input class="field grow" placeholder="🔎 كود أو اسم أو باركود..." value="${esc(catQ)}" oninput="catQ=this.value;clearTimeout(window._cq);window._cq=setTimeout(renderCatalog,350)">
@@ -674,7 +677,7 @@ function editCeleb(id){
     if(!(row.influencer_percent>=0&&row.influencer_percent<=100)) return toast('العمولة بين 0 و100%');
     busy(true);
     try{
-      const url=await uploadImage($('fImg').files[0]); if(url) row.avatar_url=url;
+      const url=await uploadImage($('fImg').files[0], true); if(url) row.avatar_url=url;
       const { error } = id ? await db.from('celebrities').update(row).eq('id',id) : await db.from('celebrities').insert(row);
       if(error) throw error;
       closeSheet(); toast('تم الحفظ ✅'); renderCelebs();
@@ -1085,13 +1088,38 @@ function clearErrors(){
   });
 }
 
+/* ===== توحيد خلفية الصور الحالية ===== */
+async function restudioAll(){
+  const isDone=u=>/-st\.jpg/.test(u||'');
+  const [cp, lp] = await Promise.all([
+    db.from('catalog_products').select('id,image_url').not('image_url','is',null),
+    db.from('products').select('id,image_url,offer_id').is('offer_id',null).not('image_url','is',null)]);
+  const jobs=[...(cp.data||[]).map(r=>['catalog_products',r]), ...(lp.data||[]).map(r=>['products',r])].filter(([,r])=>!isDone(r.image_url));
+  if(!jobs.length) return toast('كل الصور موحّدة بالفعل ✅');
+  let ok=0, bad=0;
+  for(const [t,r] of jobs){
+    toast(`🎨 ${ok+bad+1} / ${jobs.length} ...`);
+    try{
+      const blob=await ChriliStudio.studioize(r.image_url+(r.image_url.includes('?')?'&':'?')+'t='+Date.now());
+      const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}-st.jpg`;
+      const up=await db.storage.from(BUCKET).upload(path, blob, { contentType:'image/jpeg' }); if(up.error) throw up.error;
+      const url=db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      const { error } = await db.from(t).update({ image_url:url }).eq('id', r.id); if(error) throw error;
+      ok++;
+    }catch(e){ console.log('restudio', r.id, e); bad++; }
+  }
+  toast(`✅ تم توحيد ${ok} صورة${bad?` · تعذّر ${bad}`:''}`);
+  renderCatalog();
+}
+
 /* ================== أدوات مشتركة ================== */
-async function uploadImage(file){
+async function uploadImage(file, plain){
   if(!file) return null;
-  if(file.size>5*1024*1024) throw new Error('حجم الصورة أكبر من 5 ميغابايت');
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+  if(file.size>8*1024*1024) throw new Error('حجم الصورة أكبر من 8 ميغابايت');
+  let body=file, ext=(file.name&&file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg', type=file.type||'image/jpeg';
+  if(!plain){ try{ body=await ChriliStudio.studioize(file); ext='st.jpg'; type='image/jpeg'; }catch(e){ body=file; } }
   const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-  const { error } = await db.storage.from(BUCKET).upload(path, file, { contentType:file.type||'image/jpeg' });
+  const { error } = await db.storage.from(BUCKET).upload(path, body, { contentType:type });
   if(error) throw error;
   return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }

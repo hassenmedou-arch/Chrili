@@ -1,5 +1,5 @@
 // اشريلي — عامل الخدمة: يحفظ واجهة التطبيق ليفتح بسرعة، ولا يحفظ بيانات Supabase
-const CACHE = 'chrili-v19';
+const CACHE = 'chrili-v20';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

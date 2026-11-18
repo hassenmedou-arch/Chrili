@@ -87,6 +87,8 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 .products{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
 .prod{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
 .prod .img{aspect-ratio:1/1;display:grid;place-items:center;font-size:58px}
+.img.studio{background:url(studio-bg.jpg) center/cover}
+.img.studio img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply}
 .prod .body{padding:12px;display:flex;flex-direction:column;flex:1}
 .prod h4{font-size:15px;font-weight:700;line-height:1.4}
 .prod .by{font-size:12.5px;color:var(--muted);margin-top:2px}
@@ -402,7 +404,7 @@ function renderStore(id){
 function prodImg(p, c){
   const col=colorOf(c);
   return p.image_url
-    ? `<div class="img" style="background:#eee"><img src="${esc(p.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`
+    ? `<div class="img studio"><img src="${esc(p.image_url)}" alt="" loading="lazy"></div>`
     : `<div class="img" style="background:linear-gradient(160deg,${col[1]}22,${col[0]}33)">${emojiOf(c)}</div>`;
 }
 function prodCard(p){

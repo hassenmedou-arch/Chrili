@@ -123,6 +123,7 @@ textarea.field{min-height:80px;resize:vertical}
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="studio.js"></script>
 <script>
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
@@ -315,10 +316,10 @@ function editP(id){
     try {
       let img = null; const f = $('fImg').files[0];
       if (f) {
-        if (f.size > 5 * 1024 * 1024) throw new Error('حجم الصورة أكبر من 5 ميغابايت');
-        const ext = (f.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-        const path = `celeb/${me.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const up = await db.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'image/jpeg' });
+        if (f.size > 8 * 1024 * 1024) throw new Error('حجم الصورة أكبر من 8 ميغابايت');
+        let body = f; try { body = await ChriliStudio.studioize(f); } catch (e) { body = f; }
+        const path = `celeb/${me.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-st.jpg`;
+        const up = await db.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg' });
         if (up.error) throw up.error;
         img = db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
       }
