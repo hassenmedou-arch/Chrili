@@ -877,9 +877,21 @@ function delPartner(id){
   });
 }
 
-async function reviewP(id, ok){
+async function reviewP(id, ok, catId){
+  const lp=PRODUCTS.find(x=>x.id===id);
+  if(ok && catId===undefined && lp && !lp.offer_id){
+    const { data:sim } = await db.rpc('find_similar_products',{q:lp.name,p_barcode:null});
+    if(sim && sim.length){
+      sheet(`<h3>موافقة على «${esc(lp.name)}»</h3>
+        <p class="hint">وجدت في الكتالوج منتجات مشابهة. إذا كان نفس المنتج، اربطه بها حتى لا يتكرر، وإلا أنشئ بطاقة جديدة.</p>
+        ${sim.map(x=>`<button class="btn" style="background:var(--bg);color:var(--ink);margin-top:8px" onclick="closeSheet();reviewP('${id}',true,'${x.id}')"><span dir="ltr" style="font-family:monospace">${esc(x.code)}</span> · ${esc(x.name)}${x.brand?' · '+esc(x.brand):''}</button>`).join('')}
+        <button class="btn" style="margin-top:12px" onclick="closeSheet();reviewP('${id}',true,null)">➕ منتج جديد في الكتالوج</button>
+        <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+      return;
+    }
+  }
   if(ok){
-    const { error } = await db.rpc('review_product',{p_id:id,p_approve:true,p_note:null});
+    const { error } = await db.rpc('review_product',{p_id:id,p_approve:true,p_note:null,p_catalog:catId||null});
     if(error) return toast('تعذّر: '+error.message);
     toast('تمت الموافقة ✅ وأصبح ظاهراً للزبائن'); return renderProducts();
   }
