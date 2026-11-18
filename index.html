@@ -138,6 +138,17 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 .pd .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .pd .meta span{background:#F4ECDB;border-radius:8px;padding:5px 9px;font-size:12.5px}
 
+/* ---------- سلة متعددة المنتجات ---------- */
+.step{flex:1;display:flex;align-items:center;justify-content:space-between;border:1.5px solid #1b1b1b;border-radius:8px;height:42px;overflow:hidden}
+.step button{width:40px;height:100%;background:#1b1b1b;color:#fff;font-size:20px;font-weight:800}
+.step span{font-weight:800;font-size:15px}
+.pc .add2{flex:1;background:#1b1b1b;color:#fff;border-radius:8px;height:42px;font-weight:700;font-size:14px}
+.pc .add2:disabled{background:#bbb}
+#cartBar{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(0deg,#fbf8f2 70%,transparent)}
+#cartBar button{width:100%;max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--brand);color:#fff;border-radius:14px;padding:14px 16px;font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+#cartBar .n{background:#fff;color:var(--brand);border-radius:999px;min-width:26px;height:26px;display:inline-grid;place-items:center;font-size:13px;padding:0 6px}
+body.has-bar .wrap{padding-bottom:90px}
+
 /* ---------- Cart ---------- */
 .cart-item{display:flex;gap:12px;align-items:center;background:#fff;border-radius:16px;padding:12px;box-shadow:var(--shadow);margin-bottom:10px}
 .cart-item .img{width:64px;height:64px;border-radius:12px;display:grid;place-items:center;font-size:32px;flex-shrink:0}
@@ -500,8 +511,21 @@ function prodCard(p){
     <div class="nm" onclick="openProd('${p.id}')">${esc(p.name)}</div>
     <div class="pr">${Number(p.price).toLocaleString('fr-FR')} <small>MRU</small></div>
     <div class="row"><button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this)" aria-label="المفضّلة">${FAV[p.id]?'♥':'♡'}</button>
-      <button class="buy" ${out?'disabled':''} onclick="buyNow('${p.id}')">${out?'غير متوفّر':'اشترِ الآن'}</button></div>
+      ${out?'<button class="add2" disabled>غير متوفّر</button>'
+        : cart[p.id]?`<div class="step"><button onclick="cardQty('${p.id}',1)" aria-label="زيادة">+</button><span>${cart[p.id]}</span><button onclick="cardQty('${p.id}',-1)" aria-label="إنقاص">−</button></div>`
+        : `<button class="add2" onclick="cardQty('${p.id}',1)">+ أضف إلى السلة</button>`}</div>
   </div>`;
+}
+function cardQty(id,d){
+  const p=P(id), n=(cart[id]||0)+d;
+  if(n>p.stock) return toast('لا توجد كمية إضافية من هذا المنتج');
+  if(n<=0) delete cart[id]; else cart[id]=n;
+  saveCart(); if(d>0 && n===1) toast('أُضيف «'+p.name+'» — تابع التسوّق أو افتح السلة');
+  refreshView();
+}
+function refreshView(){
+  if(!document.getElementById('vStore').classList.contains('hidden') && CUR) renderStore(CUR);
+  else if(!document.getElementById('vHome').classList.contains('hidden')) renderHome();
 }
 function buyNow(id){ const p=P(id); if(!(cart[id]>0)){ if(p.stock<=0) return toast('نفدت الكمية'); cart[id]=1; saveCart(); } closeSheet(); go('cart'); }
 function openProd(id){
@@ -518,13 +542,22 @@ function openProd(id){
     ${p.description?`<div class="desc">${esc(p.description)}</div>`:''}
     <div class="row" style="display:flex;gap:8px;margin-top:16px">
       <button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this);if(CUR)renderStore(CUR)">${FAV[p.id]?'♥':'♡'}</button>
-      <button class="buy" style="flex:1;background:#fff;color:#1b1b1b;border:1.5px solid #1b1b1b;border-radius:8px;padding:12px;font-weight:700" ${out?'disabled':''} onclick="addToCart('${p.id}',this)">+ السلة</button>
+      <button class="buy" style="flex:1;background:#fff;color:#1b1b1b;border:1.5px solid #1b1b1b;border-radius:8px;padding:12px;font-weight:700" ${out?'disabled':''} onclick="addToCart('${p.id}',this);refreshView()">+ السلة</button>
       <button class="buy" style="flex:1.4;background:#1b1b1b;color:#fff;border-radius:8px;padding:12px;font-weight:800" ${out?'disabled':''} onclick="buyNow('${p.id}')">اشترِ الآن</button></div>
   </div>`);
 }
 
 /* ================== السلة ================== */
-function updBadge(){ document.getElementById('badge').textContent=Object.values(cart).reduce((a,b)=>a+b,0); }
+function updBadge(){
+  const n=Object.values(cart).reduce((a,b)=>a+b,0); document.getElementById('badge').textContent=n;
+  let bar=document.getElementById('cartBar');
+  const onShop=['vHome','vStore'].some(v=>!document.getElementById(v).classList.contains('hidden'));
+  if(!n || !onShop){ bar?.remove(); document.body.classList.remove('has-bar'); return; }
+  const tot=Object.entries(cart).reduce((a,[id,q])=>a+(P(id)?P(id).price*q:0),0);
+  if(!bar){ bar=document.createElement('div'); bar.id='cartBar'; document.body.appendChild(bar); }
+  document.body.classList.add('has-bar');
+  bar.innerHTML=`<button onclick="go('cart')"><span><span class="n">${n}</span> في السلة · ${Number(tot).toLocaleString('fr-FR')} MRU</span><span>إتمام الطلب ←</span></button>`;
+}
 function addToCart(id,btn){
   const p=P(id); if((cart[id]||0)>=p.stock) return toast('لا توجد كمية إضافية من هذا المنتج');
   cart[id]=(cart[id]||0)+1; saveCart();
@@ -538,7 +571,7 @@ function setQty(id,d){
   saveCart(); renderCart();
 }
 function renderCart(){
-  const ids=Object.keys(cart), el=document.getElementById('cartBody');
+  const ids=Object.keys(cart).filter(id=>P(id)), el=document.getElementById('cartBody');
   if(!ids.length){ el.innerHTML=`<div class="empty"><div style="font-size:54px">🛒</div><p style="margin:10px 0 16px">سلتك فارغة</p><button class="btn" style="max-width:260px" onclick="go('home')">تصفّح المشاهير</button></div>`; return; }
   let sub=0;
   const rows=ids.map(id=>{ const p=P(id),c=C(p.celebrity_id),line=p.price*cart[id]; sub+=line; const col=colorOf(c); return `
@@ -549,7 +582,7 @@ function renderCart(){
       <div style="text-align:left"><div class="price" style="margin:0">${fmt(line)}</div><button class="rm" onclick="setQty('${id}',-${cart[id]})">حذف</button></div>
     </div>`; }).join('');
   const ship=sub>=SHIP.free?0:SHIP.fee;
-  el.innerHTML=rows+`<div class="summary">
+  el.innerHTML=rows+`<button class="back" style="margin:4px 0 12px" onclick="go(CUR?'store':'home',CUR)">＋ أضف منتجات أخرى</button><div class="summary">
     <div class="row"><span>المجموع الفرعي</span><span>${fmt(sub)}</span></div>
     <div class="row"><span>التوصيل</span><span>${ship?fmt(ship):'مجاني 🎉'}</span></div>
     <div class="row total"><span>الإجمالي</span><span>${fmt(sub+ship)}</span></div>
