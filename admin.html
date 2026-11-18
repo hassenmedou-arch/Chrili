@@ -620,7 +620,7 @@ async function renderCelebs(){
     ${CELEBS.map(c=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
         ${c.avatar_url?`<img class="thumb" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:'<div class="thumb" style="border-radius:50%">⭐</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(c.name)} ${c.active?'':'<span class="pill" style="background:#999">مخفي</span>'}</div>
-          <div class="s"><b dir="ltr" style="font-family:monospace">${esc(c.code||'')}</b> · ${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات · عمولتك ${Number(c.commission_percent??15)}%
+          <div class="s"><b dir="ltr" style="font-family:monospace">${esc(c.code||'')}</b> · ${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات · عمولة المؤثّر ${Number(c.influencer_percent??5)}%
           ${c.owner_id?' · <span class="pill" style="background:#2E7D5B">🔑 يدير واجهته</span>':''}</div></div></div>
       <div class="acts"><button class="sbtn" onclick="editCeleb('${c.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="prodFilter='${c.id}';go('products')">🏷️ منتجاته</button>
@@ -638,7 +638,7 @@ function editCeleb(id){
     <label>الفئة</label><input class="field" id="fCat" list="catList" value="${esc(c.category||'')}" placeholder="مثال: عطور، ملابس تقليدية...">
     <datalist id="catList">${cats.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
     <label>عدد المتابعين (اختياري)</label><input class="field" id="fFol" value="${esc(c.followers||'')}" placeholder="مثال: 120K">
-    <label>عمولة اشريلي من مبيعاته (%)</label><input class="field" id="fCom" inputmode="decimal" value="${esc(c.commission_percent??15)}">
+    <label>عمولة المؤثّر من كل بيع في واجهته (%)</label><input class="field" id="fCom" inputmode="decimal" value="${esc(c.influencer_percent??5)}">
     <label>الصورة الشخصية</label><input class="field" id="fImg" type="file" accept="image/*">
     ${c.avatar_url?`<img class="preview" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:''}
     <label class="chk"><input type="checkbox" id="fActive" ${c.active?'checked':''}> ظاهر للزبائن</label>
@@ -646,9 +646,9 @@ function editCeleb(id){
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{
     const row={ name:$('fName').value.trim(), bio:$('fBio').value.trim()||null, category:$('fCat').value.trim()||null,
-      followers:$('fFol').value.trim()||null, active:$('fActive').checked, commission_percent:Number($('fCom').value.replace(',','.')) };
+      followers:$('fFol').value.trim()||null, active:$('fActive').checked, influencer_percent:Number($('fCom').value.replace(',','.')) };
     if(row.name.length<2) return toast('أدخل الاسم');
-    if(!(row.commission_percent>=0&&row.commission_percent<=100)) return toast('العمولة بين 0 و100%');
+    if(!(row.influencer_percent>=0&&row.influencer_percent<=100)) return toast('العمولة بين 0 و100%');
     busy(true);
     try{
       const url=await uploadImage($('fImg').files[0]); if(url) row.avatar_url=url;
@@ -767,8 +767,8 @@ async function renderPartners(){
       <span style="color:var(--muted);font-weight:700">${MERCHANTS.length} تاجر</span></div>
     ${MERCHANTS.map(m=>`<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(m.code||'')}</span> · ${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
         <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">⏳ ${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">✅ ${ready(m.id)} جاهز</span>`:''}</span></div>
-      <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج</div>
-      <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم</button>
+      <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج · 💰 عمولة اشريلي ${Number(m.platform_percent??5)}%</div>
+      <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم والعمولة</button>
         ${m.user_id?`<button class="sbtn" onclick="resetMerchantPw('${m.id}')">🔑 كلمة مرور جديدة</button>`:''}
         <button class="sbtn ${m.active?'dan':''}" onclick="toggleMerchant('${m.id}',${!m.active})">${m.active?'⛔ إيقاف':'✅ تفعيل'}</button></div></div>`).join('')
       || '<div class="empty">لا يوجد حساب تاجر بعد</div>'}
@@ -939,34 +939,34 @@ async function renderProfit(){
   const [rep, ship, byRef, bySup] = await Promise.all([ db.rpc('admin_profit_report', args), db.rpc('admin_shipping_income', args), db.rpc('admin_sales_by_reference', args), db.rpc('admin_sales_by_supplier', args) ]);
   if(rep.error) return fail('تعذّر حساب الأرباح', rep.error);
   const rows=rep.data||[], sum=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0);
-  const gross=sum('gross'), com=sum('commission'), pay=sum('payable'), sh=Number(ship.data||0);
+  const gross=sum('gross'), com=sum('platform'), infl=sum('influencer_due'), sup=sum('supplier_due'), sh=Number(ship.data||0);
   const opts=[['month','هذا الشهر'],['last','الشهر الماضي'],['year','هذه السنة'],['all','منذ البداية']];
   $('main').innerHTML=`
     <div class="toolbar"><select class="grow" onchange="profitPeriod=this.value;go('profit')">
       ${opts.map(([k,l])=>`<option value="${k}" ${k===profitPeriod?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="stats">
-      <div class="stat"><div class="k">💰 ربحك (عمولة + توصيل)</div><div class="v" style="color:#2E7D5B">${fmt(com+sh)}</div></div>
+      <div class="stat"><div class="k">💰 ربحك (عمولة اشريلي + توصيل)</div><div class="v" style="color:#2E7D5B">${fmt(com+sh)}</div></div>
       <div class="stat"><div class="k">مبيعات المنتجات (مُسلَّمة)</div><div class="v">${fmt(gross)}</div></div>
-      <div class="stat"><div class="k">عمولتك من المشاهير</div><div class="v">${fmt(com)}</div></div>
+      <div class="stat"><div class="k">عمولة اشريلي</div><div class="v">${fmt(com)}</div></div>
       <div class="stat"><div class="k">دخل التوصيل</div><div class="v">${fmt(sh)}</div></div>
-      <div class="stat"><div class="k">مستحق للمشاهير</div><div class="v" style="color:#b7791f">${fmt(pay)}</div></div>
-      <div class="stat"><div class="k">طلبات مُسلَّمة</div><div class="v">${sum('orders')}</div></div>
+      <div class="stat"><div class="k">⭐ مستحق للمؤثّرين</div><div class="v" style="color:#6b3fa0">${fmt(infl)}</div></div>
+      <div class="stat"><div class="k">🏪 مستحق للمورّدين</div><div class="v" style="color:#b7791f">${fmt(sup)}</div></div>
     </div>
-    <h3 style="margin:18px 0 8px">حسب المشهور</h3>
-    ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t" style="color:#2E7D5B">+${fmt(r.commission)}</span></div>
-      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · مبيعات ${fmt(r.gross)}<br>💸 تدفع له: <b>${fmt(r.payable)}</b></div></div>`).join('')
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">⚖️ كل بيع يُقسَّم: <b>المؤثّر</b> نسبته (افتراضياً 5%) + <b>اشريلي</b> نسبته من المورّد (افتراضياً 5%) + <b>الباقي للمورّد</b>. تغيّر النسب من ⭐ المشاهير و🏪 التجّار.</div></div>
+    <h3 style="margin:18px 0 8px">حسب المؤثّر (الواجهة)</h3>
+    ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t">${fmt(r.gross)}</span></div>
+      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة<br>⭐ للمؤثّر: <b>${fmt(r.influencer_due)}</b> · 💰 لاشريلي: <b style="color:#2E7D5B">${fmt(r.platform)}</b> · 🏪 للمورّدين: ${fmt(r.supplier_due)}</div></div>`).join('')
       || '<div class="empty">لا توجد طلبات مُسلَّمة في هذه الفترة</div>'}
     <h3 style="margin:18px 0 8px">حسب المورّد (التاجر)</h3>
-    <p class="s" style="margin-bottom:6px">ما بيع من عند كل مورّد، ومن كم واجهة، وكم تدفع له بسعر الشراء على الطلبات المسلَّمة.</p>
+    <p class="s" style="margin-bottom:6px">ما بيع من عند كل مورّد ومن كم واجهة، وحصّته بعد عمولة المؤثّر وعمولة اشريلي (الطلبات المسلَّمة).</p>
     ${(bySup.data||[]).map(r=>`<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(r.supplier_code)}</span> · ${esc(r.supplier_name)}</span><span class="t">${fmt(r.gross)}</span></div>
-      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ من ${r.influencers} واجهة<br>💸 تدفع له (سعر الشراء، مسلَّم): <b>${fmt(r.cost_due)}</b> · مبيعات مسلَّمة ${fmt(r.delivered_gross)}
-      ${Number(r.items_without_cost)?`<br><span style="color:#b7791f">⚠️ ${r.items_without_cost} سطر بدون سعر شراء: أضفه في المرجع من 📚 الكتالوج</span>`:''}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
+      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ من ${r.influencers} واجهة · عمولة اشريلي ${Number(r.platform_percent)}%<br>مسلَّم ${fmt(r.delivered_gross)} ← 🏪 تدفع له: <b>${fmt(r.supplier_due)}</b> · ⭐ للمؤثّرين ${fmt(r.influencer_due)} · 💰 لاشريلي ${fmt(r.platform)}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <h3 style="margin:18px 0 8px">حسب المرجع (مورّد + منتج)</h3>
     <p class="s" style="margin-bottom:6px">كل الطلبات غير الملغاة في الفترة، مع المخزون المتبقي عند المورّد.</p>
     ${(byRef.data||[]).filter(r=>Number(r.items)>0).map(r=>`<div class="card"><div class="hd"><span class="t" dir="ltr" style="font-family:monospace">${esc(r.ref_code)}</span><span class="t">${fmt(r.gross)}</span></div>
       <div class="s">${esc(r.product_name)} · 🏪 ${esc(r.supplier_name)}<br>🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ ${r.influencers} مؤثّر · 📦 باقٍ ${r.stock_left}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
-      📌 تُحسب الأرباح على الطلبات بحالة <b>«تم التوصيل»</b> فقط. العمولة تُحفظ مع كل طلب لحظة الشراء، فتغيير نسبة مشهور لاحقاً لا يغيّر الأرباح السابقة.<br>
+      📌 تُحسب الأرباح على الطلبات بحالة <b>«تم التوصيل»</b> فقط. النسب تُحفظ مع كل طلب لحظة الشراء، فتغييرها لاحقاً لا يغيّر الحسابات السابقة.<br>
       ⚠️ لا تشمل مصاريفك (أجرة الموصّل، الإعلانات، الاشتراكات): اطرحها لتعرف الربح الصافي.</div></div>`;
 }
 let MERCHANTS=[];
@@ -994,12 +994,14 @@ function addMerchant(){
 }
 function renameMerchant(id){
   const m=MERCHANTS.find(x=>x.id===id);
-  sheet(`<h3>اسم التاجر</h3><input class="field" id="mName" value="${esc(m.name)}">
+  sheet(`<h3>التاجر ${esc(m.code||'')}</h3><label>الاسم</label><input class="field" id="mName" value="${esc(m.name)}">
+    <label>عمولة اشريلي من كل بيع لمنتجاته (%)</label><input class="field" id="mPct" inputmode="decimal" value="${esc(m.platform_percent??5)}">
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{
     const name=$('mName').value.trim(); if(name.length<2) return toast('أدخل الاسم');
-    busy(true); const { error } = await db.from('merchants').update({name}).eq('id',id);
+    const platform_percent=Number($('mPct').value.replace(',','.')); if(!(platform_percent>=0&&platform_percent<=100)) return toast('النسبة بين 0 و100%');
+    busy(true); const { error } = await db.from('merchants').update({name, platform_percent}).eq('id',id);
     if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
     closeSheet(); toast('تم الحفظ ✅'); renderPartners();
   };

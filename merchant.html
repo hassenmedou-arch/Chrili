@@ -343,18 +343,20 @@ async function loadSales(){
   $('vSales').innerHTML = '<div class="empty">⏳</div>';
   const { data, error } = await db.rpc('celeb_sales');
   if (error || !data?.length) { $('vSales').innerHTML = '<div class="empty">تعذّر التحميل</div>'; return; }
-  const s = data[0], c = Number(s.commission_percent || 0);
+  const s = data[0], c = Number(s.influencer_percent || 0);
   const net = Number(s.delivered_net);
   $('vSales').innerHTML = `
     <div class="stats">
       <div class="stat"><div class="k">مبيعات مُسلَّمة</div><div class="v">${fmt(s.delivered_gross)}</div></div>
-      <div class="stat"><div class="k">نصيبك بعد عمولة اشريلي (${c}% حالياً)</div><div class="v" style="color:var(--ok)">${fmt(Math.round(net))}</div></div>
+      <div class="stat"><div class="k">نصيبك (مسلَّم)</div><div class="v" style="color:var(--ok)">${fmt(Math.round(net))}</div></div>
+      <div class="stat"><div class="k">عمولتك كمؤثّرة (${c}%)</div><div class="v">${fmt(s.influencer_due)}</div></div>
+      ${Number(s.supplier_due)?`<div class="stat"><div class="k">حصّتك كمورّدة لمنتجاتك</div><div class="v">${fmt(s.supplier_due)}</div></div>`:''}
       <div class="stat"><div class="k">طلبات مُسلَّمة</div><div class="v">${s.delivered_orders}</div></div>
       <div class="stat"><div class="k">قطع مباعة</div><div class="v">${s.delivered_items}</div></div>
       <div class="stat"><div class="k">طلبات جارية</div><div class="v">${s.open_orders}</div></div>
       <div class="stat"><div class="k">قيمة الطلبات الجارية</div><div class="v">${fmt(s.open_gross)}</div></div>
     </div>
-    <div class="note">💡 الأرقام تشمل منتجاتك فقط. «نصيبك» يُحسب على الطلبات التي تم توصيلها. سعر التوصيل غير محسوب.</div>`;
+    <div class="note">💡 الأرقام تشمل منتجاتك فقط. «نصيبك» = عمولتك على كل بيع في واجهتك + حصّتك من منتجاتك التي تورّدينها، على الطلبات التي تم توصيلها. سعر التوصيل غير محسوب.</div>`;
 }
 
 (async () => { const { data: { session } } = await db.auth.getSession(); if (!session) show('auth', true); })();
