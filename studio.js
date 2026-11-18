@@ -26,18 +26,19 @@
     const im = ctx.getImageData(0, 0, w, h), d = im.data;
     const c = edgeColor(d, w, h);
     if (!c) return false;
-    const TOL = 70, seen = new Uint8Array(w*h), st = [];
-    const dist = p => Math.abs(d[p*4]-c[0]) + Math.abs(d[p*4+1]-c[1]) + Math.abs(d[p*4+2]-c[2]);
-    for (let x = 0; x < w; x++) st.push(x, (h-1)*w + x);
-    for (let y = 0; y < h; y++) st.push(y*w, y*w + w - 1);
+    const TOL = 70, N = w*h, seen = new Uint8Array(N), st = new Int32Array(N + 4*(w+h)); let sp = 0;
+    const add = p => { if (!seen[p]) { seen[p] = 1; st[sp++] = p; } };
+    for (let x = 0; x < w; x++) { add(x); add((h-1)*w + x); }
+    for (let y = 0; y < h; y++) { add(y*w); add(y*w + w - 1); }
     let removed = 0;
-    while (st.length) {
-      const p = st.pop(); if (seen[p]) continue; seen[p] = 1;
-      const k = dist(p); if (k > TOL) continue;
-      d[p*4+3] = k < TOL*0.55 ? 0 : Math.round(255 * (k - TOL*0.55) / (TOL*0.45)); removed++;
-      const x = p % w, y = (p / w) | 0;
-      if (x > 0) st.push(p-1); if (x < w-1) st.push(p+1);
-      if (y > 0) st.push(p-w); if (y < h-1) st.push(p+w);
+    while (sp) {
+      const p = st[--sp], q = p*4;
+      const k = Math.abs(d[q]-c[0]) + Math.abs(d[q+1]-c[1]) + Math.abs(d[q+2]-c[2]);
+      if (k > TOL) continue;
+      d[q+3] = k < TOL*0.55 ? 0 : Math.round(255 * (k - TOL*0.55) / (TOL*0.45)); removed++;
+      const x = p % w;
+      if (x > 0) add(p-1); if (x < w-1) add(p+1);
+      if (p >= w) add(p-w); if (p < N-w) add(p+w);
     }
     if (removed < w*h*0.05) return false;
     ctx.putImageData(im, 0, 0);
@@ -57,7 +58,7 @@
     const url = typeof src === 'string' ? src : URL.createObjectURL(src);
     const img = await loadImg(url);
     if (typeof src !== 'string') URL.revokeObjectURL(url);
-    const k = Math.min(1, 1400 / Math.max(img.naturalWidth, img.naturalHeight));
+    const k = Math.min(1, 1000 / Math.max(img.naturalWidth, img.naturalHeight));
     const cv = document.createElement('canvas');
     cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
     cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
