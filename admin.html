@@ -331,9 +331,9 @@ async function renderStats(){
 
 /* ================== الطلبات ================== */
 async function renderOrders(){
-  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name),order_items(qty,unit_price,prep_status,merchant_id,products(name))').order('created_at',{ascending:false}).limit(200);
+  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name),order_items(qty,unit_price,prep_status,merchant_id,celebrity_id,ref_code,products(name))').order('created_at',{ascending:false}).limit(200);
   if(orderFilter!=='all') q=q.eq('status',orderFilter);
-  const [{ data, error }] = await Promise.all([q, loadMerchants()]);
+  const [{ data, error }] = await Promise.all([q, loadMerchants(), CELEBS.length?null:loadCatalog()]);
   if(error) return fail('تعذّر تحميل الطلبات', error);
   const opts=[['all','كل الطلبات'],...Object.entries(STATUS).map(([k,v])=>[k,v[0]])];
   $('main').innerHTML=`
@@ -345,7 +345,8 @@ async function renderOrders(){
 function orderCard(o){
   const PS={pending:['⏳ بانتظار التاجر','#b7791f'],preparing:['🧺 قيد التجهيز','#1f4e79'],ready:['✅ جاهز للاستلام','#2E7D5B']};
   const mname=id=>(MERCHANTS.find(m=>m.id===id)||{}).name||'';
-  const items=o.order_items.map(i=>`${esc(i.products?.name||'منتج')} × ${i.qty} = ${fmt(i.unit_price*i.qty)}${i.merchant_id&&!['cancelled','delivered'].includes(o.status)?` <span class="pill" style="background:${PS[i.prep_status][1]};font-size:11.5px">${PS[i.prep_status][0]}${mname(i.merchant_id)?' · '+esc(mname(i.merchant_id)):''}</span>`:''}`).join('<br>');
+  const cel=id=>(CELEBS.find(c=>c.id===id)||{}).name||'';
+  const items=o.order_items.map(i=>`${esc(i.products?.name||'منتج')} × ${i.qty} = ${fmt(i.unit_price*i.qty)}${i.celebrity_id?` <span class="pill" style="background:#6b3fa0;font-size:11.5px">⭐ من واجهة ${esc(cel(i.celebrity_id))}</span>`:''}${i.ref_code?` <span dir="ltr" style="font-family:monospace;font-size:11.5px;color:var(--muted)">${esc(i.ref_code)}</span>`:''}${i.merchant_id&&!['cancelled','delivered'].includes(o.status)?` <span class="pill" style="background:${PS[i.prep_status][1]};font-size:11.5px">${PS[i.prep_status][0]}${mname(i.merchant_id)?' · '+esc(mname(i.merchant_id)):''}</span>`:''}`).join('<br>');
   const next={ new:[['confirmed','✔ تأكيد','pri'],['cancelled','✕ إلغاء','dan']], confirmed:[['delivered','🚚 تم التوصيل','pri'],['cancelled','✕ إلغاء','dan']], delivered:[], cancelled:[['new','↺ إرجاع إلى جديد','']] }[o.status]||[];
   return `<div class="card">
     <div class="hd"><span class="t">طلب ${shortId(o.id)}</span>${pill(o.status)}</div>
