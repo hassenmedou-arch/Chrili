@@ -436,14 +436,12 @@ function renderHome(){ loadFav();
   let html='';
   const list=CELEBS.filter(c=>(cat==='الكل'||c.category===cat)&&(!q||c.name.includes(q)||(c.category||'').includes(q)));
   if(list.length){
-    const sorted=[...list].sort((x,y)=>x.name.localeCompare(y.name,'ar'));
-    const groups={}; sorted.forEach(c=>{ const L=(c.name.replace(/^ال/,'')[0]||'#'); (groups[L]=groups[L]||[]).push(c); });
-    html+=`<h3 class="section-t">المشاهير</h3>`+Object.entries(groups).map(([L,cs])=>`<div class="letter">${esc(L)}</div><div class="cgrid">`+cs.map(c=>`
+    html+=`<h3 class="section-t">المشاهير</h3><div class="cgrid">`+list.map(c=>`
       <button class="cg" onclick="go('store','${c.id}')">
         <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="" loading="lazy">`:`<span class="em">${emojiOf(c)}</span>`}<span class="vf">✔</span></div>
         <div class="nm">${esc(c.name)}</div>
         <div class="mt">${count(c.id)} منتج${c.followers?' · '+esc(c.followers):''}</div>
-      </button>`).join('')+`</div>`).join('');
+      </button>`).join('')+`</div>`;
   }
   if(q){
     const prods=PRODUCTS.filter(p=>(p.name.includes(q)||(p.brand||'').includes(q)||(p.code||'').includes(q))&&(cat==='الكل'||C(p.celebrity_id)?.category===cat));
