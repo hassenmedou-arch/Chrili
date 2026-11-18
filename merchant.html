@@ -214,6 +214,7 @@ function render(){
       ${o.items.map(i => `<div class="item">
           ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
           <div style="flex:1;min-width:0"><div class="iname">${esc(i.product_name)}</div>
+            ${i.influencer_name?`<div class="time">⭐ من واجهة ${esc(i.influencer_name)}${i.ref_code?` · <span dir="ltr" style="font-family:monospace">${esc(i.ref_code)}</span>`:''}</div>`:''}
             <span class="pill" style="background:${PREP[i.prep_status][1]}">${PREP[i.prep_status][0]}</span></div>
           <div class="qty">×${i.qty}</div></div>
         ${closed?'':`<div class="acts">

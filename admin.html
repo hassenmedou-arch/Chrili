@@ -936,7 +936,7 @@ function periodRange(p){
 async function renderProfit(){
   const [f,t]=periodRange(profitPeriod);
   const args={ p_from:f?f.toISOString():null, p_to:t?t.toISOString():null };
-  const [rep, ship, byRef] = await Promise.all([ db.rpc('admin_profit_report', args), db.rpc('admin_shipping_income', args), db.rpc('admin_sales_by_reference', args) ]);
+  const [rep, ship, byRef, bySup] = await Promise.all([ db.rpc('admin_profit_report', args), db.rpc('admin_shipping_income', args), db.rpc('admin_sales_by_reference', args), db.rpc('admin_sales_by_supplier', args) ]);
   if(rep.error) return fail('تعذّر حساب الأرباح', rep.error);
   const rows=rep.data||[], sum=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0);
   const gross=sum('gross'), com=sum('commission'), pay=sum('payable'), sh=Number(ship.data||0);
@@ -956,6 +956,11 @@ async function renderProfit(){
     ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t" style="color:#2E7D5B">+${fmt(r.commission)}</span></div>
       <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · مبيعات ${fmt(r.gross)}<br>💸 تدفع له: <b>${fmt(r.payable)}</b></div></div>`).join('')
       || '<div class="empty">لا توجد طلبات مُسلَّمة في هذه الفترة</div>'}
+    <h3 style="margin:18px 0 8px">حسب المورّد (التاجر)</h3>
+    <p class="s" style="margin-bottom:6px">ما بيع من عند كل مورّد، ومن كم واجهة، وكم تدفع له بسعر الشراء على الطلبات المسلَّمة.</p>
+    ${(bySup.data||[]).map(r=>`<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(r.supplier_code)}</span> · ${esc(r.supplier_name)}</span><span class="t">${fmt(r.gross)}</span></div>
+      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ من ${r.influencers} واجهة<br>💸 تدفع له (سعر الشراء، مسلَّم): <b>${fmt(r.cost_due)}</b> · مبيعات مسلَّمة ${fmt(r.delivered_gross)}
+      ${Number(r.items_without_cost)?`<br><span style="color:#b7791f">⚠️ ${r.items_without_cost} سطر بدون سعر شراء: أضفه في المرجع من 📚 الكتالوج</span>`:''}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <h3 style="margin:18px 0 8px">حسب المرجع (مورّد + منتج)</h3>
     <p class="s" style="margin-bottom:6px">كل الطلبات غير الملغاة في الفترة، مع المخزون المتبقي عند المورّد.</p>
     ${(byRef.data||[]).filter(r=>Number(r.items)>0).map(r=>`<div class="card"><div class="hd"><span class="t" dir="ltr" style="font-family:monospace">${esc(r.ref_code)}</span><span class="t">${fmt(r.gross)}</span></div>
