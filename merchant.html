@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>اشريلي — بوابة الشركاء</title>
+<title>اشريلي — واجهة المؤثّر</title>
 <meta name="theme-color" content="#0E4D3A">
 <link rel="icon" type="image/png" href="icon-cs-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -96,7 +96,7 @@ textarea.field{min-height:80px;resize:vertical}
 
 <section id="app" class="hidden">
   <header><div class="top">
-    <div class="logo"><div class="logo-mark" id="mk2"></div><div><h1 id="portalTitle">بوابة التاجر</h1><small style="letter-spacing:3px;font-family:Montserrat,Tajawal,sans-serif">اشريلي · CHRILI</small></div></div>
+    <div class="logo"><div class="logo-mark" id="mk2"></div><div><h1 id="portalTitle">واجهتي</h1><small style="letter-spacing:3px;font-family:Montserrat,Tajawal,sans-serif">اشريلي · CHRILI</small></div></div>
     <span class="spacer"></span>
     <a class="ibtn" href="index.html?shop=1" aria-label="المتجر" style="display:grid;place-items:center;text-decoration:none">🛍️</a>
     <button class="ibtn" id="notifBtn" onclick="askNotif()" aria-label="تفعيل التنبيهات">🔔</button>
@@ -106,13 +106,12 @@ textarea.field{min-height:80px;resize:vertical}
   <div class="wrap">
     <div class="hello" id="hello"></div>
     <nav class="views hidden" id="views">
-      <button data-v="orders" class="on" onclick="setView('orders')">📦 الطلبات</button>
-      <button data-v="products" onclick="setView('products')">🏷️ منتجاتي</button>
+      <button data-v="products" class="on" onclick="setView('products')">🏷️ منتجاتي</button>
       <button data-v="sales" onclick="setView('sales')">💰 مبيعاتي</button>
     </nav>
     <div id="vProducts" class="hidden"></div>
     <div id="vSales" class="hidden"></div>
-    <div id="vOrders">
+    <div id="vOrders" class="hidden">
     <div class="sub" id="lastUpd"></div>
     <nav class="tabs" id="tabs"></nav>
     <div id="list"></div>
@@ -161,17 +160,14 @@ async function onSignedIn(user){
   ]);
   ['auth','denied','app'].forEach(x => show(x, false));
   if (['admin','staff'].includes(p?.role)) { return startPreview(user); }
-  if (!['merchant','celebrity'].includes(p?.role)) { location.replace('index.html'); return; }
-  if (!m || !m.active) { show('denied', true); return; }
-  me = { id: user.id, name: m.name };
-  celebId = null;
-  if (p.role === 'celebrity') { const r = await db.rpc('my_celebrity_id'); celebId = r.data || null; }
-  $('hello').textContent = 'مرحباً ' + m.name + ' 👋';
-  $('portalTitle').textContent = celebId ? 'واجهتي' : 'بوابة التاجر';
-  show('views', !!celebId);
-  show('app', true); setView('orders');
-  await load(true);
-  clearInterval(timer); timer = setInterval(() => load(false), 20000);
+  if (p?.role !== 'celebrity') { location.replace('index.html?shop=1'); return; }
+  const r = await db.rpc('my_celebrity_id'); celebId = r.data || null;
+  if (!celebId || (m && !m.active)) { show('denied', true); return; }
+  me = { id: user.id, name: (m && m.name) || p.full_name || '' };
+  $('hello').textContent = 'مرحباً ' + me.name + ' 👋';
+  $('portalTitle').textContent = 'واجهتي';
+  show('views', true);
+  show('app', true); setView('products');
 }
 db.auth.onAuthStateChange((ev, session) => {
   if (session?.user) { if (!me || me.id !== session.user.id) setTimeout(() => onSignedIn(session.user), 0); }
@@ -371,29 +367,22 @@ async function startPreview(user){
   const q = new URLSearchParams(location.search).get('as') || '';
   const [kind, id] = q.split(':');
   show('app', true);
-  $('portalTitle').textContent = 'معاينة البوابات';
+  $('portalTitle').textContent = 'معاينة واجهات المؤثّرين';
   const pick = `<div class="note" style="background:#E7F0EC">👁️ <b>وضع المعاينة</b> — ترى البوابة كما يراها صاحبها، بدون تعديل.
     <div style="margin-top:8px"><select class="field" onchange="location.search='?as='+this.value">
-      <option value="">— اختر تاجراً أو مشهوراً —</option>
-      <optgroup label="🏪 التجّار / المورّدون">${M.map(x=>`<option value="merch:${x.id}" ${kind==='merch'&&id===x.id?'selected':''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}</optgroup>
-      <optgroup label="⭐ المشاهير / المؤثّرون">${C.map(x=>`<option value="celeb:${x.id}" ${kind==='celeb'&&id===x.id?'selected':''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}</optgroup>
+      <option value="">— اختر مؤثّراً —</option>
+      ${C.map(x=>`<option value="celeb:${x.id}" ${kind==='celeb'&&id===x.id?'selected':''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}
     </select></div>
     <div style="margin-top:8px"><a href="admin.html" style="color:var(--brand);font-weight:800">⚙️ الرجوع إلى لوحة التحكم</a></div></div>`;
   $('hello').innerHTML = pick;
-  if (kind === 'merch' && M.some(x => x.id === id)) {
-    const x = M.find(x => x.id === id);
-    PREVIEW = { merch: id, celeb: null, name: x.name };
-    celebId = null; show('views', false);
-  } else if (kind === 'celeb' && C.some(x => x.id === id)) {
+  if (kind === 'celeb' && C.some(x => x.id === id)) {
     const x = C.find(x => x.id === id);
     const mm = M.find(m => x.owner_id && m.user_id === x.owner_id);
     PREVIEW = { merch: mm ? mm.id : null, celeb: id, name: x.name };
     celebId = id; show('views', true);
-  } else { show('vOrders', false); show('views', false); return; }
+  } else { show('views', false); show('vProducts', false); show('vSales', false); return; }
   $('hello').insertAdjacentHTML('beforeend', `<div class="hello">${esc(PREVIEW.name)}</div>`);
-  setView('orders');
-  await load(true);
-  clearInterval(timer); timer = setInterval(() => load(false), 20000);
+  setView('products');
 }
 
 (async () => { const { data: { session } } = await db.auth.getSession(); if (!session) show('auth', true); })();

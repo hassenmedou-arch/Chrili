@@ -180,7 +180,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
   <div class="denied wrap">
     <div style="font-size:60px">🔒</div>
     <h2 style="margin:10px 0">ليس لهذا الحساب صلاحية الدخول</h2>
-    <p style="margin:6px 0 12px">إذا كنت تاجراً: ادخل من <a href="merchant.html" style="color:var(--brand);font-weight:800">بوابة التاجر</a></p>
+    
     <p style="color:var(--muted);line-height:1.7">اطلب من مدير التطبيق أن يمنحك صلاحية «موظف»، ثم سجّل الدخول من جديد.</p>
     <button class="btn" style="max-width:260px" onclick="db.auth.signOut()">تسجيل الخروج</button>
   </div>
@@ -192,7 +192,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
     <div class="logo"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1>لوحة اشريلي</h1><small style="letter-spacing:3px">CHRILI</small></div></div>
     <div class="spacer"></div>
     <a class="icon-btn" href="index.html?shop=1" title="المتجر" style="text-decoration:none">🛍️</a>
-      <a class="icon-btn" href="merchant.html" title="معاينة بوابات التجّار والمشاهير" style="text-decoration:none">🏪</a>
+      <a class="icon-btn" href="merchant.html" title="معاينة واجهات المؤثّرين" style="text-decoration:none">⭐</a>
     <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
   </div>
   <nav class="tabbar" id="tabbar">
@@ -203,7 +203,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
     <button data-t="celebs">⭐ المشاهير</button>
     <button data-t="users">👥 المستخدمون</button>
     <button data-t="profit">💰 الأرباح</button>
-    <button data-t="partners">🏪 التجّار</button>
+    <button data-t="partners">🏪 المورّدون</button>
     <button data-t="errors">⚠️ الأخطاء</button>
   </nav></header>
   <main class="wrap" id="main" style="padding-top:16px"></main>
@@ -270,7 +270,8 @@ async function onSignedIn(user){
   show('auth',false); show('loading',true);
   const { data } = await db.from('profiles').select('full_name,role').eq('id',user.id).maybeSingle();
   show('loading',false);
-  if(data && ['merchant','celebrity'].includes(data.role)){ location.replace('merchant.html'); return; }
+  if(data && data.role==='celebrity'){ location.replace('merchant.html'); return; }
+  if(data && data.role==='merchant'){ location.replace('index.html?shop=1'); return; }
   if(!data || !['admin','staff'].includes(data.role)){ location.replace('index.html'); return; }
   me={ id:user.id, name:data.full_name, role:data.role };
   ['users','profit','partners','errors'].forEach(t=>document.querySelector(`#tabbar [data-t="${t}"]`).classList.toggle('hidden', me.role!=='admin'));
@@ -783,7 +784,7 @@ async function renderPartners(){
   const mHtml=`
     <h3 style="margin:6px 0 8px">🏪 حسابات التجّار</h3>
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
-      كل تاجر يدخل إلى <b dir="ltr">chrili.pages.dev/merchant.html</b> برقمه وكلمة مروره، فيرى فقط الطلبات التي عليه تجهيزها (بدون أسعار ولا بيانات الزبون)، ويضغط «جاهز للاستلام».<br>
+      المورّدون ليست لهم واجهة في التطبيق: فريق اشريلي يدير منتجاتهم ومخزونهم وطلبات التجهيز من هنا ومن تبويب «الطلبات».<br>
       🏷️ حدّد لكل منتج تاجره من تبويب «المنتجات» (أو من إعدادات الربط أدناه).</div></div>
     <div class="toolbar"><button class="sbtn pri" onclick="addMerchant()">+ حساب تاجر</button>
       <span style="color:var(--muted);font-weight:700">${MERCHANTS.length} تاجر</span></div>
@@ -791,7 +792,6 @@ async function renderPartners(){
         <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">⏳ ${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">✅ ${ready(m.id)} جاهز</span>`:''}</span></div>
       <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج · 💰 عمولة اشريلي ${Number(m.platform_percent??5)}%</div>
       <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم والعمولة</button>
-        <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" href="merchant.html?as=merch:${m.id}">👁️ بوابته</a>
         ${m.user_id?`<button class="sbtn" onclick="resetMerchantPw('${m.id}')">🔑 كلمة مرور جديدة</button>`:''}
         <button class="sbtn ${m.active?'dan':''}" onclick="toggleMerchant('${m.id}',${!m.active})">${m.active?'⛔ إيقاف':'✅ تفعيل'}</button></div></div>`).join('')
       || '<div class="empty">لا يوجد حساب تاجر بعد</div>'}

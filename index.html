@@ -302,7 +302,7 @@ async function doRegister(e){
 }
 
 const WORKSPACE = { admin:['admin.html','⚙️','لوحة التحكم'], staff:['admin.html','⚙️','لوحة التحكم'],
-  merchant:['merchant.html','🏪','بوابتي'], celebrity:['merchant.html','⭐','واجهتي'] };
+  celebrity:['merchant.html','⭐','واجهتي'] };
 async function onSignedIn(user){
   const meta = user.user_metadata || {};
   const { data: prof } = await db.from('profiles').select('role').eq('id', user.id).maybeSingle();
