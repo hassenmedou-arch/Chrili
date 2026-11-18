@@ -295,6 +295,25 @@ function go(t){
 function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
 
 /* ================== الإحصاءات ================== */
+async function editShipping(){
+  const { data } = await db.from('app_settings').select('key,value');
+  const g=k=>(data||[]).find(r=>r.key===k)?.value;
+  sheet(`<h3>🚚 إعدادات التوصيل</h3>
+    <label>سعر التوصيل (أوقية)</label><input class="field" id="sFee" inputmode="numeric" value="${esc(g('shipping_fee')??120)}">
+    <label>التوصيل مجاني ابتداءً من (أوقية)</label><input class="field" id="sFree" inputmode="numeric" value="${esc(g('free_shipping_from')??10000)}">
+    <p class="hint">يُطبَّق على الطلبات الجديدة فقط.</p>
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const fee=Number($('sFee').value), free=Number($('sFree').value);
+    if(!(fee>=0)||!(free>=0)) return toast('أدخل أرقاماً صحيحة');
+    busy(true);
+    const r1=await db.from('app_settings').update({value:fee, updated_at:new Date().toISOString()}).eq('key','shipping_fee');
+    const r2=await db.from('app_settings').update({value:free, updated_at:new Date().toISOString()}).eq('key','free_shipping_from');
+    if(r1.error||r2.error){ busy(false); return toast('تعذّر الحفظ'); }
+    closeSheet(); toast('تم حفظ إعدادات التوصيل ✅'); renderStats();
+  };
+}
 async function renderStats(){
   const [u, o, p, c, er] = await Promise.all([
     me.role==='admin' ? db.from('profiles').select('id',{count:'exact',head:true}) : Promise.resolve({count:null}),
@@ -314,6 +333,7 @@ async function renderStats(){
   $('main').innerHTML=`
     <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#0E4D3A':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
     <p class="sub">نظرة سريعة على تطبيقك</p>
+    ${me.role==='admin'?'<div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="editShipping()">🚚 إعدادات التوصيل</button></div>':''}
     <div class="stats">
       ${me.role==='admin'?`<div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
       <div class="stat"><div class="k">📦 كل الطلبات</div><div class="v">${orders.length}</div></div>

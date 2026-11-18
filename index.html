@@ -329,11 +329,14 @@ function onSignedOut(){
 function askLogout(){ modal('هل تريد تسجيل الخروج؟', async ()=>{ await db.auth.signOut(); }); }
 
 /* ================== تحميل المشاهير والمنتجات ================== */
+let SHIP={fee:120, free:10000};
 async function loadCatalog(){
-  const [c, p] = await Promise.all([
+  const [c, p, st] = await Promise.all([
     db.from('celebrities').select('*').order('created_at'),
-    db.from('products').select('*').order('created_at')
+    db.from('products').select('*').order('created_at'),
+    db.from('app_settings').select('key,value')
   ]);
+  (st.data||[]).forEach(r=>{ if(r.key==='shipping_fee') SHIP.fee=Number(r.value); if(r.key==='free_shipping_from') SHIP.free=Number(r.value); });
   if(c.error || p.error){
     reportError('loadCatalog: ' + (c.error||p.error).message);
     document.getElementById('homeBody').innerHTML = `<div class="empty">تعذّر تحميل البيانات. تحقق من الاتصال ثم أعد فتح التطبيق.</div>`;
@@ -439,7 +442,7 @@ function renderCart(){
         <div class="qty"><button onclick="setQty('${id}',1)">+</button><span>${cart[id]}</span><button onclick="setQty('${id}',-1)">−</button></div></div>
       <div style="text-align:left"><div class="price" style="margin:0">${fmt(line)}</div><button class="rm" onclick="setQty('${id}',-${cart[id]})">حذف</button></div>
     </div>`; }).join('');
-  const ship=sub>=10000?0:300;
+  const ship=sub>=SHIP.free?0:SHIP.fee;
   el.innerHTML=rows+`<div class="summary">
     <div class="row"><span>المجموع الفرعي</span><span>${fmt(sub)}</span></div>
     <div class="row"><span>التوصيل</span><span>${ship?fmt(ship):'مجاني 🎉'}</span></div>
@@ -447,7 +450,7 @@ function renderCart(){
     <label>عنوان التوصيل</label>
     <input class="field" id="addr" placeholder="الحي، الشارع، علامة قريبة...">
     <button class="btn" id="coBtn" onclick="checkout()">تأكيد الطلب</button>
-    <p class="hint">التوصيل مجاني للطلبات من 10 000 أوقية فأكثر</p></div>`;
+    <p class="hint">التوصيل ${fmt(SHIP.fee)}، ومجاني للطلبات من ${fmt(SHIP.free)} فأكثر</p></div>`;
 }
 async function checkout(){
   const addr=document.getElementById('addr').value.trim();
