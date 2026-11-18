@@ -160,7 +160,7 @@ async function onSignedIn(user){
     db.from('merchants').select('id, name, active').eq('user_id', user.id).maybeSingle()
   ]);
   ['auth','denied','app'].forEach(x => show(x, false));
-  if (['admin','staff'].includes(p?.role)) { location.replace('admin.html'); return; }
+  if (['admin','staff'].includes(p?.role)) { return startPreview(user); }
   if (!['merchant','celebrity'].includes(p?.role)) { location.replace('index.html'); return; }
   if (!m || !m.active) { show('denied', true); return; }
   me = { id: user.id, name: m.name };
@@ -179,7 +179,8 @@ db.auth.onAuthStateChange((ev, session) => {
 });
 
 async function load(manual){
-  const { data, error } = await db.rpc('merchant_queue', { p_days: 14 });
+  if (PREVIEW && !PREVIEW.merch) { ROWS = []; $('lastUpd').textContent = 'لا يوجد حساب تاجر مرتبط بهذا المشهور بعد'; render(); return; }
+  const { data, error } = await db.rpc('merchant_queue', { p_days: 14, p_as: PREVIEW ? PREVIEW.merch : null });
   if (error) { if (manual) toast('تعذّر التحميل: ' + error.message); return; }
   ROWS = data || [];
   const ids = new Set(ROWS.filter(r => r.prep_status === 'pending' && !['cancelled','delivered'].includes(r.order_status)).map(r => r.item_id));
@@ -217,7 +218,7 @@ function render(){
             ${i.influencer_name?`<div class="time">⭐ من واجهة ${esc(i.influencer_name)}${i.ref_code?` · <span dir="ltr" style="font-family:monospace">${esc(i.ref_code)}</span>`:''}</div>`:''}
             <span class="pill" style="background:${PREP[i.prep_status][1]}">${PREP[i.prep_status][0]}</span></div>
           <div class="qty">×${i.qty}</div></div>
-        ${closed?'':`<div class="acts">
+        ${closed||PREVIEW?'':`<div class="acts">
           ${i.prep_status==='pending'?`<button class="b-prep" onclick="setSt('${i.item_id}','preparing')">🧺 بدأت التجهيز</button>`:''}
           ${i.prep_status!=='ready'?`<button class="b-ready" onclick="setSt('${i.item_id}','ready')">✅ جاهز للاستلام</button>`:''}
           ${i.prep_status!=='pending'?`<button class="b-undo" onclick="setSt('${i.item_id}','${i.prep_status==='ready'?'preparing':'pending'}')" aria-label="تراجع">↩️ تراجع</button>`:''}
@@ -275,12 +276,12 @@ function statusPill(p){
 }
 async function loadProducts(){
   $('vProducts').innerHTML = '<div class="empty">⏳</div>';
-  const { data, error } = await db.rpc('celeb_my_products');
+  const { data, error } = await db.rpc('celeb_my_products', { p_as: PREVIEW ? PREVIEW.celeb : null });
   if (error) { $('vProducts').innerHTML = `<div class="empty">تعذّر التحميل</div>`; return; }
   MYP = data || [];
   const pend = MYP.filter(p => p.review_status === 'pending' || p.pending_changes).length;
   $('vProducts').innerHTML = `
-    <button class="addbtn" onclick="editP()">＋ إضافة منتج</button>
+    ${PREVIEW?'':'<button class="addbtn" onclick="editP()">＋ إضافة منتج</button>'}
     <div class="note">📝 كل منتج جديد أو تعديل في الاسم أو السعر أو الصورة يراجعه فريق اشريلي قبل أن يظهر للزبائن. تعديل <b>الكمية</b> يُطبَّق فوراً.${pend ? `<br>⏳ لديك <b>${pend}</b> بانتظار المراجعة.` : ''}</div>
     ${MYP.map(p => `<div class="pcard">
       ${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="">` : '<div class="thumb">🛍️</div>'}
@@ -289,10 +290,10 @@ async function loadProducts(){
         <div><span class="price">${fmt(p.price)}</span> · الكمية: <b style="color:${p.stock <= 3 ? 'var(--danger)' : 'inherit'}">${p.stock}</b></div>
         <div style="margin-top:4px">${statusPill(p)} ${p.pending_changes ? '<span class="pill" style="background:#1f4e79">✏️ تعديلات بانتظار الموافقة</span>' : ''}</div>
         ${p.review_note ? `<div class="hint" style="color:var(--danger)">ملاحظة اشريلي: ${esc(p.review_note)}</div>` : ''}
-        <div class="acts" style="margin-top:8px">
+        ${PREVIEW?'':`<div class="acts" style="margin-top:8px">
           <button class="sbtn" onclick="editP('${p.id}')">✏️ تعديل</button>
           ${p.review_status === 'approved' ? `<button class="sbtn" onclick="toggleP('${p.id}',${!p.active})">${p.active ? '🙈 إخفاء' : '👁️ إظهار'}</button>` : ''}
-        </div></div></div>`).join('') || '<div class="empty">لا توجد منتجات بعد. أضف أول منتج 👆</div>'}`;
+        </div>`}</div></div>`).join('') || '<div class="empty">لا توجد منتجات بعد. أضف أول منتج 👆</div>'}`;
 }
 function editP(id){
   const p = id ? MYP.find(x => x.id === id) : { name:'', description:'', price:'', stock:10, image_url:'' };
@@ -341,7 +342,7 @@ async function toggleP(id, val){
 }
 async function loadSales(){
   $('vSales').innerHTML = '<div class="empty">⏳</div>';
-  const { data, error } = await db.rpc('celeb_sales');
+  const { data, error } = await db.rpc('celeb_sales', { p_as: PREVIEW ? PREVIEW.celeb : null });
   if (error || !data?.length) { $('vSales').innerHTML = '<div class="empty">تعذّر التحميل</div>'; return; }
   const s = data[0], c = Number(s.influencer_percent || 0);
   const net = Number(s.delivered_net);
@@ -357,6 +358,42 @@ async function loadSales(){
       <div class="stat"><div class="k">قيمة الطلبات الجارية</div><div class="v">${fmt(s.open_gross)}</div></div>
     </div>
     <div class="note">💡 الأرقام تشمل منتجاتك فقط. «نصيبك» = عمولتك على كل بيع في واجهتك + حصّتك من منتجاتك التي تورّدينها، على الطلبات التي تم توصيلها. سعر التوصيل غير محسوب.</div>`;
+}
+
+/* ===== وضع المعاينة للمدير: يرى بوابة أي تاجر أو مشهور (قراءة فقط) ===== */
+let PREVIEW = null;
+async function startPreview(user){
+  me = { id: user.id, name: 'المدير' };
+  const [ms, cs] = await Promise.all([
+    db.from('merchants').select('id, code, name, user_id').order('code'),
+    db.from('celebrities').select('id, code, name, owner_id').order('code')]);
+  const M = ms.data || [], C = cs.data || [];
+  const q = new URLSearchParams(location.search).get('as') || '';
+  const [kind, id] = q.split(':');
+  show('app', true);
+  $('portalTitle').textContent = 'معاينة البوابات';
+  const pick = `<div class="note" style="background:#E7F0EC">👁️ <b>وضع المعاينة</b> — ترى البوابة كما يراها صاحبها، بدون تعديل.
+    <div style="margin-top:8px"><select class="field" onchange="location.search='?as='+this.value">
+      <option value="">— اختر تاجراً أو مشهوراً —</option>
+      <optgroup label="🏪 التجّار / المورّدون">${M.map(x=>`<option value="merch:${x.id}" ${kind==='merch'&&id===x.id?'selected':''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}</optgroup>
+      <optgroup label="⭐ المشاهير / المؤثّرون">${C.map(x=>`<option value="celeb:${x.id}" ${kind==='celeb'&&id===x.id?'selected':''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}</optgroup>
+    </select></div>
+    <div style="margin-top:8px"><a href="admin.html" style="color:var(--brand);font-weight:800">⚙️ الرجوع إلى لوحة التحكم</a></div></div>`;
+  $('hello').innerHTML = pick;
+  if (kind === 'merch' && M.some(x => x.id === id)) {
+    const x = M.find(x => x.id === id);
+    PREVIEW = { merch: id, celeb: null, name: x.name };
+    celebId = null; show('views', false);
+  } else if (kind === 'celeb' && C.some(x => x.id === id)) {
+    const x = C.find(x => x.id === id);
+    const mm = M.find(m => x.owner_id && m.user_id === x.owner_id);
+    PREVIEW = { merch: mm ? mm.id : null, celeb: id, name: x.name };
+    celebId = id; show('views', true);
+  } else { show('vOrders', false); show('views', false); return; }
+  $('hello').insertAdjacentHTML('beforeend', `<div class="hello">${esc(PREVIEW.name)}</div>`);
+  setView('orders');
+  await load(true);
+  clearInterval(timer); timer = setInterval(() => load(false), 20000);
 }
 
 (async () => { const { data: { session } } = await db.auth.getSession(); if (!session) show('auth', true); })();
