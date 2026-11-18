@@ -197,6 +197,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
   <nav class="tabbar" id="tabbar">
     <button data-t="stats" class="on">📊 الإحصاءات</button>
     <button data-t="orders">📦 الطلبات</button>
+    <button data-t="catalog">📚 الكتالوج</button>
     <button data-t="products">🏷️ المنتجات</button>
     <button data-t="celebs">⭐ المشاهير</button>
     <button data-t="users">👥 المستخدمون</button>
@@ -288,7 +289,7 @@ function go(t){
   tab=t;
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
   $('main').innerHTML='<div class="empty">⏳ جارٍ التحميل...</div>';
-  ({stats:renderStats, orders:renderOrders, products:renderProducts, celebs:renderCelebs, users:renderUsers, profit:renderProfit, partners:renderPartners, errors:renderErrors})[t]();
+  ({stats:renderStats, orders:renderOrders, products:renderProducts, catalog:renderCatalog, celebs:renderCelebs, users:renderUsers, profit:renderProfit, partners:renderPartners, errors:renderErrors})[t]();
   window.scrollTo(0,0);
 }
 function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
@@ -387,7 +388,7 @@ async function renderProducts(){
     ${!CELEBS.length?'<div class="empty">أضف مشهورًا أولاً من تبويب «المشاهير»</div>':''}
     ${list.map(p=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
         ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
-        <div style="flex:1;min-width:0"><div class="t">${esc(p.name)}</div>
+        <div style="flex:1;min-width:0"><div class="t">${esc(p.name)}</div><div class="s" dir="ltr" style="text-align:right;font-family:monospace;font-size:12px">${esc(p.code||"")}</div>
           <div class="s">${esc(cname(p.celebrity_id))} · <b style="color:var(--brand)">${fmt(p.price)}</b><br>
           المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}${p.merchant_id?' · 🏪 '+esc((MERCHANTS.find(m=>m.id===p.merchant_id)||{}).name||''):''}
           ${p.review_status==='pending'?' · <span class="pill" style="background:#b7791f">⏳ منتج جديد بانتظار موافقتك</span>':''}
@@ -408,6 +409,7 @@ async function renderProducts(){
 }
 function editProduct(id){
   if(!CELEBS.length) return toast('أضف مشهورًا أولاً');
+  if(id){ const lp=PRODUCTS.find(x=>x.id===id); if(lp&&lp.offer_id) return editListing(lp); }
   const p=id?PRODUCTS.find(x=>x.id===id):{celebrity_id:(prodFilter!=='all'&&prodFilter!=='review')?prodFilter:CELEBS[0].id,name:'',description:'',price:'',stock:10,active:true,image_url:''};
   sheet(`<h3>${id?'تعديل منتج':'منتج جديد'}</h3>
     ${p.source==='api'?'<p class="hint" style="color:var(--danger)">🔌 هذا المنتج يأتي من متجر التاجر: أي تعديل هنا سيُستبدل في المزامنة القادمة. عدّل السعر من إعدادات الربط.</p>':''}
@@ -441,6 +443,172 @@ function editProduct(id){
   };
 }
 
+
+/* ================== الكتالوج: المنتجات الموحّدة + المراجع + عروض المؤثّرين ================== */
+let CAT={cats:[],prods:[],vars:[],offers:[]}, catQ='';
+async function loadCat(){
+  const [a,b,c,d]=await Promise.all([
+    db.from('categories').select('*').order('code'),
+    db.from('catalog_products').select('*').order('code'),
+    db.from('product_variants').select('*').order('code'),
+    db.from('offers').select('*').order('code')]);
+  const e=a.error||b.error||c.error||d.error; if(e) throw e;
+  CAT={cats:a.data,prods:b.data,vars:c.data,offers:d.data};
+}
+async function renderCatalog(){
+  try{ await Promise.all([loadCat(), loadCatalog(), loadMerchants()]); }catch(e){ return fail('تعذّر تحميل الكتالوج', e); }
+  const catName=id=>(CAT.cats.find(c=>c.id===id)||{}).name||'بدون فئة';
+  const sup=id=>MERCHANTS.find(m=>m.id===id)||{};
+  const listings=oid=>PRODUCTS.filter(p=>p.offer_id===oid);
+  const q=catQ.trim().toLowerCase();
+  const list=CAT.prods.filter(p=>!q||[p.code,p.name,p.brand,p.barcode].some(x=>(x||'').toLowerCase().includes(q))
+     || CAT.offers.some(o=>o.product_id===p.id&&o.code.toLowerCase().includes(q)));
+  $('main').innerHTML=`
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink);line-height:1.8">
+      📚 <b>منتج واحد في الكتالوج</b> (P…) ← <b>مرجع لكل مورّد</b> (F…-P…: السعر والمخزون) ← <b>عرض لكل مؤثّر</b> (I…·F…-P…).<br>
+      المؤثّرون الذين يعرضون نفس المرجع <b>يتقاسمون نفس المخزون</b>، ومبيعات كل واحد تُسجَّل باسمه.</div></div>
+    <div class="toolbar"><button class="sbtn pri" onclick="editCatProd()">+ منتج في الكتالوج</button>
+      <button class="sbtn" onclick="editCategory()">+ فئة</button>
+      <input class="field grow" placeholder="🔎 كود أو اسم أو باركود..." value="${esc(catQ)}" oninput="catQ=this.value;clearTimeout(window._cq);window._cq=setTimeout(renderCatalog,350)">
+      <span style="color:var(--muted);font-weight:700">${CAT.prods.length} منتج · ${CAT.offers.length} مرجع · ${CAT.cats.length} فئة</span></div>
+    ${list.map(p=>{ const offs=CAT.offers.filter(o=>o.product_id===p.id); const vs=CAT.vars.filter(v=>v.product_id===p.id);
+      return `<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
+        ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+        <div style="flex:1;min-width:0"><div class="t">${esc(p.name)} ${p.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</div>
+          <div class="s"><b dir="ltr" style="font-family:monospace">${esc(p.code)}</b> · ${esc(catName(p.category_id))}${p.brand?' · '+esc(p.brand):''}${p.barcode?' · <span dir="ltr">'+esc(p.barcode)+'</span>':''}
+          ${vs.length?'<br>المقاسات: '+vs.map(v=>`<span dir="ltr" style="font-family:monospace">${esc(v.code)}</span> ${esc(v.label)}`).join(' · '):''}</div></div></div>
+        ${offs.map(o=>{ const v=vs.find(x=>x.id===o.variant_id); const ls=listings(o.id);
+          return `<div class="s" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:8px;color:var(--ink)">
+            <b dir="ltr" style="font-family:monospace">${esc(o.code)}</b> · 🏪 ${esc(sup(o.supplier_id).name||'')}${v?' · '+esc(v.label):''} ${o.active?'':'<span class="pill" style="background:#999">موقوف</span>'}<br>
+            💰 البيع ${fmt(o.base_price)}${o.cost_price!=null?' · الشراء '+fmt(o.cost_price):''} · 📦 المخزون المشترك <b style="color:${o.stock<=3?'var(--danger)':'inherit'}">${o.stock}</b><br>
+            ⭐ ${ls.length?ls.map(l=>esc((CELEBS.find(c=>c.id===l.celebrity_id)||{}).name||'')+(Number(l.price)!==Number(o.base_price)?' ('+fmt(l.price)+')':'')).join('، '):'لا يعرضه أي مؤثّر بعد'}
+            <div class="acts" style="margin-top:6px"><button class="sbtn" onclick="editOffer('${p.id}','${o.id}')">✏️ المرجع</button>
+              <button class="sbtn pri" onclick="assignOffer('${o.id}')">⭐ اعرضه عند مؤثّر</button></div></div>`; }).join('')}
+        <div class="acts"><button class="sbtn pri" onclick="editOffer('${p.id}')">+ مرجع (مورّد)</button>
+          <button class="sbtn" onclick="addVariant('${p.id}')">+ مقاس</button>
+          <button class="sbtn" onclick="editCatProd('${p.id}')">✏️ البطاقة</button></div></div>`; }).join('') || '<div class="empty">لا توجد نتائج</div>'}`;
+}
+function editCategory(){
+  sheet(`<h3>فئة جديدة</h3><p class="hint">الكود (C01، C02…) يُعطى تلقائياً.</p>
+    <label>اسم الفئة</label><input class="field" id="cName" placeholder="مثال: عناية بالبشرة">
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{ const name=$('cName').value.trim(); if(name.length<2) return toast('أدخل اسم الفئة');
+    busy(true); const { error }=await db.from('categories').insert({name});
+    if(error){ busy(false); return toast(/duplicate|unique/.test(error.message)?'هذه الفئة موجودة':'تعذّر الحفظ: '+error.message); }
+    closeSheet(); toast('تمت إضافة الفئة ✅'); renderCatalog(); };
+}
+function editCatProd(id){
+  const p=id?CAT.prods.find(x=>x.id===id):{name:'',brand:'',description:'',barcode:'',category_id:'',image_url:'',active:true};
+  sheet(`<h3>${id?'بطاقة المنتج '+esc(p.code):'منتج جديد في الكتالوج'}</h3>
+    ${id?'':'<p class="hint">الكود (P000001…) يُعطى تلقائياً. قبل الحفظ أبحث عن منتج مشابه حتى لا يتكرر.</p>'}
+    <label>اسم المنتج</label><input class="field" id="kName" value="${esc(p.name)}">
+    <label>الماركة (اختياري)</label><input class="field" id="kBrand" value="${esc(p.brand||'')}">
+    <label>الفئة</label><select id="kCat"><option value="">— بدون فئة —</option>${CAT.cats.map(c=>`<option value="${c.id}" ${c.id===p.category_id?'selected':''}>${esc(c.code)} · ${esc(c.name)}</option>`).join('')}</select>
+    <label>الباركود (اختياري، يمنع التكرار)</label><input class="field" id="kBar" dir="ltr" value="${esc(p.barcode||'')}">
+    <label>الوصف</label><textarea id="kDesc">${esc(p.description||'')}</textarea>
+    <label>الصورة</label><input class="field" id="kImg" type="file" accept="image/*">
+    ${p.image_url?`<img class="preview" src="${esc(p.image_url)}" alt="">`:''}
+    <label class="chk"><input type="checkbox" id="kAct" ${p.active?'checked':''}> منتج نشط</label>
+    <div id="kSim"></div>
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  let confirmed=!!id;
+  $('saveBtn').onclick=async()=>{
+    const row={ name:$('kName').value.trim(), brand:$('kBrand').value.trim()||null, category_id:$('kCat').value||null,
+      barcode:$('kBar').value.trim()||null, description:$('kDesc').value.trim()||null, active:$('kAct').checked };
+    if(row.name.length<2) return toast('أدخل اسم المنتج');
+    if(row.barcode && !/^[0-9A-Za-z-]{4,40}$/.test(row.barcode)) return toast('الباركود: أرقام وحروف فقط');
+    if(!confirmed){
+      const { data:sim } = await db.rpc('find_similar_products',{q:row.name,p_barcode:row.barcode});
+      if(sim&&sim.length){
+        $('kSim').innerHTML=`<div class="card" style="background:#FFF4DC;margin-top:12px"><div class="s" style="color:var(--ink)">⚠️ <b>منتجات مشابهة موجودة</b> — هل هو أحدها؟ إن كان كذلك أضف له <b>مرجعاً</b> بدل منتج جديد:<br>
+          ${sim.map(x=>`<b dir="ltr" style="font-family:monospace">${esc(x.code)}</b> ${esc(x.name)}${x.brand?' · '+esc(x.brand):''}${x.barcode&&x.barcode===row.barcode?' <b style="color:var(--danger)">(نفس الباركود)</b>':''}`).join('<br>')}
+          <br><br>إن كان منتجاً مختلفاً فعلاً، اضغط «حفظ» مرة ثانية.</div></div>`;
+        if(sim.some(x=>row.barcode&&x.barcode===row.barcode)) return toast('هذا الباركود مسجّل لمنتج آخر');
+        confirmed=true; return;
+      }
+    }
+    busy(true);
+    try{ const url=await uploadImage($('kImg').files[0]); if(url) row.image_url=url;
+      const { error } = id ? await db.from('catalog_products').update(row).eq('id',id) : await db.from('catalog_products').insert(row);
+      if(error) throw error; closeSheet(); toast('تم الحفظ ✅'); renderCatalog();
+    }catch(e){ busy(false); toast('تعذّر الحفظ: '+(/barcode/.test(e.message)?'الباركود مستعمل':e.message)); }
+  };
+}
+function addVariant(pid){
+  const p=CAT.prods.find(x=>x.id===pid);
+  sheet(`<h3>مقاس أو نوع لـ ${esc(p.name)}</h3><p class="hint">مثال: 50 مل، 100 مل، أحمر. الكود (V01…) يُعطى تلقائياً، ولكل مقاس مرجعه ومخزونه.</p>
+    <label>المقاس / النوع</label><input class="field" id="vLabel">
+    <label>الباركود (اختياري)</label><input class="field" id="vBar" dir="ltr">
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{ const label=$('vLabel').value.trim(); if(!label) return toast('أدخل المقاس');
+    busy(true); const { error }=await db.from('product_variants').insert({product_id:pid,label,barcode:$('vBar').value.trim()||null});
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); } closeSheet(); toast('تمت إضافة المقاس ✅'); renderCatalog(); };
+}
+function editOffer(pid, oid){
+  const p=CAT.prods.find(x=>x.id===pid), vs=CAT.vars.filter(v=>v.product_id===pid);
+  const o=oid?CAT.offers.find(x=>x.id===oid):{supplier_id:'',variant_id:'',supplier_sku:'',cost_price:'',base_price:'',stock:0,active:true};
+  if(!MERCHANTS.length) return toast('أضف مورّداً أولاً من تبويب «التجّار»');
+  sheet(`<h3>${oid?'المرجع '+esc(o.code):'مرجع جديد لـ '+esc(p.name)}</h3>
+    <p class="hint">المرجع = هذا المنتج عند مورّد معيّن. كل المؤثّرين الذين يعرضونه يتقاسمون مخزونه.</p>
+    <label>المورّد</label><select id="oSup" ${oid?'disabled':''}>${MERCHANTS.map(m=>`<option value="${m.id}" ${m.id===o.supplier_id?'selected':''}>${esc(m.code)} · ${esc(m.name)}</option>`).join('')}</select>
+    ${vs.length?`<label>المقاس</label><select id="oVar" ${oid?'disabled':''}><option value="">— بدون مقاس —</option>${vs.map(v=>`<option value="${v.id}" ${v.id===o.variant_id?'selected':''}>${esc(v.code)} · ${esc(v.label)}</option>`).join('')}</select>`:''}
+    <label>سعر البيع الأساسي (أوقية)</label><input class="field" id="oPrice" inputmode="decimal" value="${esc(o.base_price)}">
+    <label>سعر الشراء من المورّد (اختياري، لا يراه إلا الإدارة)</label><input class="field" id="oCost" inputmode="decimal" value="${esc(o.cost_price??'')}">
+    <label>المخزون المتوفر عند المورّد</label><input class="field" id="oStock" inputmode="numeric" value="${esc(o.stock)}">
+    <label>كود المورّد للمنتج (اختياري)</label><input class="field" id="oSku" dir="ltr" value="${esc(o.supplier_sku||'')}">
+    <label class="chk"><input type="checkbox" id="oAct" ${o.active?'checked':''}> المرجع نشط</label>
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const row={ base_price:Number($('oPrice').value.replace(',','.')), cost_price:$('oCost').value.trim()===''?null:Number($('oCost').value.replace(',','.')),
+      stock:parseInt($('oStock').value,10), supplier_sku:$('oSku').value.trim()||null, active:$('oAct').checked };
+    if(!(row.base_price>0)) return toast('أدخل سعر بيع صحيحاً');
+    if(row.cost_price!=null && !(row.cost_price>=0)) return toast('سعر الشراء غير صحيح');
+    if(!(row.stock>=0)) return toast('أدخل مخزوناً صحيحاً');
+    if(!oid){ row.product_id=pid; row.supplier_id=$('oSup').value; row.variant_id=($('oVar')&&$('oVar').value)||null; }
+    busy(true);
+    const { error } = oid ? await db.from('offers').update(row).eq('id',oid) : await db.from('offers').insert(row);
+    if(error){ busy(false); return toast(/duplicate|unique/.test(error.message)?'هذا المورّد له مرجع لهذا المنتج من قبل: عدّله بدل إنشاء جديد':'تعذّر الحفظ: '+error.message); }
+    closeSheet(); toast('تم الحفظ ✅'); renderCatalog();
+  };
+}
+function assignOffer(oid){
+  const o=CAT.offers.find(x=>x.id===oid), p=CAT.prods.find(x=>x.id===o.product_id);
+  const have=PRODUCTS.filter(l=>l.offer_id===oid).map(l=>l.celebrity_id);
+  const free=CELEBS.filter(c=>!have.includes(c.id));
+  if(!free.length) return toast('كل المؤثّرين يعرضون هذا المرجع');
+  sheet(`<h3>اعرض ${esc(o.code)} عند مؤثّر</h3><p class="s">${esc(p.name)} · السعر الأساسي ${fmt(o.base_price)} · المخزون المشترك ${o.stock}</p>
+    <label>المؤثّر</label><select id="aCeleb">${free.map(c=>`<option value="${c.id}">${esc(c.code)} · ${esc(c.name)}</option>`).join('')}</select>
+    <label>سعر خاص لهذا المؤثّر (اتركه فارغاً = السعر الأساسي)</label><input class="field" id="aPrice" inputmode="decimal" placeholder="${esc(o.base_price)}">
+    <button class="btn" id="saveBtn">حفظ ونشر</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{
+    const pr=$('aPrice').value.trim(); const price=pr===''?null:Number(pr.replace(',','.'));
+    if(price!==null && !(price>0)) return toast('السعر غير صحيح');
+    busy(true);
+    const { error } = await db.from('products').insert({ celebrity_id:$('aCeleb').value, offer_id:oid, price, active:true, review_status:'approved' });
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
+    closeSheet(); toast('أصبح المنتج ظاهراً عند المؤثّر ✅'); renderCatalog();
+  };
+}
+function editListing(l){
+  const o=null;
+  sheet(`<h3>عرض ${esc(l.code||'')}</h3>
+    <p class="hint">هذا العرض مرتبط بمرجع في الكتالوج: الاسم والوصف والصورة تُعدَّل من <b>بطاقة المنتج</b>، والمخزون المشترك من <b>المرجع</b> (تبويب 📚 الكتالوج).</p>
+    <p class="s"><b>${esc(l.name)}</b> · المخزون المشترك: ${l.stock}</p>
+    <label>سعر البيع عند هذا المؤثّر (أوقية)</label><input class="field" id="lPrice" inputmode="decimal" value="${esc(l.price)}">
+    <label class="chk"><input type="checkbox" id="lAct" ${l.active?'checked':''}> ظاهر للزبائن عند هذا المؤثّر</label>
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="catQ='${esc((l.code||'').split('·')[1]||'')}';closeSheet();go('catalog')">📚 فتح المرجع في الكتالوج</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{ const price=Number($('lPrice').value.replace(',','.')); if(!(price>0)) return toast('السعر غير صحيح');
+    busy(true); const { error }=await db.from('products').update({price, active:$('lAct').checked}).eq('id',l.id);
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); } closeSheet(); toast('تم الحفظ ✅'); renderProducts(); };
+}
+
 /* ================== المشاهير ================== */
 async function renderCelebs(){
   try{ await loadCatalog(); }catch(e){ return fail('تعذّر تحميل المشاهير', e); }
@@ -451,7 +619,7 @@ async function renderCelebs(){
     ${CELEBS.map(c=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
         ${c.avatar_url?`<img class="thumb" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:'<div class="thumb" style="border-radius:50%">⭐</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(c.name)} ${c.active?'':'<span class="pill" style="background:#999">مخفي</span>'}</div>
-          <div class="s">${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات · عمولتك ${Number(c.commission_percent??15)}%
+          <div class="s"><b dir="ltr" style="font-family:monospace">${esc(c.code||'')}</b> · ${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات · عمولتك ${Number(c.commission_percent??15)}%
           ${c.owner_id?' · <span class="pill" style="background:#2E7D5B">🔑 يدير واجهته</span>':''}</div></div></div>
       <div class="acts"><button class="sbtn" onclick="editCeleb('${c.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="prodFilter='${c.id}';go('products')">🏷️ منتجاته</button>
@@ -596,7 +764,7 @@ async function renderPartners(){
       🏷️ حدّد لكل منتج تاجره من تبويب «المنتجات» (أو من إعدادات الربط أدناه).</div></div>
     <div class="toolbar"><button class="sbtn pri" onclick="addMerchant()">+ حساب تاجر</button>
       <span style="color:var(--muted);font-weight:700">${MERCHANTS.length} تاجر</span></div>
-    ${MERCHANTS.map(m=>`<div class="card"><div class="hd"><span class="t">${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
+    ${MERCHANTS.map(m=>`<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(m.code||'')}</span> · ${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
         <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">⏳ ${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">✅ ${ready(m.id)} جاهز</span>`:''}</span></div>
       <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج</div>
       <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم</button>
@@ -755,7 +923,7 @@ function periodRange(p){
 async function renderProfit(){
   const [f,t]=periodRange(profitPeriod);
   const args={ p_from:f?f.toISOString():null, p_to:t?t.toISOString():null };
-  const [rep, ship] = await Promise.all([ db.rpc('admin_profit_report', args), db.rpc('admin_shipping_income', args) ]);
+  const [rep, ship, byRef] = await Promise.all([ db.rpc('admin_profit_report', args), db.rpc('admin_shipping_income', args), db.rpc('admin_sales_by_reference', args) ]);
   if(rep.error) return fail('تعذّر حساب الأرباح', rep.error);
   const rows=rep.data||[], sum=k=>rows.reduce((a,r)=>a+Number(r[k]||0),0);
   const gross=sum('gross'), com=sum('commission'), pay=sum('payable'), sh=Number(ship.data||0);
@@ -775,6 +943,10 @@ async function renderProfit(){
     ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t" style="color:#2E7D5B">+${fmt(r.commission)}</span></div>
       <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · مبيعات ${fmt(r.gross)}<br>💸 تدفع له: <b>${fmt(r.payable)}</b></div></div>`).join('')
       || '<div class="empty">لا توجد طلبات مُسلَّمة في هذه الفترة</div>'}
+    <h3 style="margin:18px 0 8px">حسب المرجع (مورّد + منتج)</h3>
+    <p class="s" style="margin-bottom:6px">كل الطلبات غير الملغاة في الفترة، مع المخزون المتبقي عند المورّد.</p>
+    ${(byRef.data||[]).filter(r=>Number(r.items)>0).map(r=>`<div class="card"><div class="hd"><span class="t" dir="ltr" style="font-family:monospace">${esc(r.ref_code)}</span><span class="t">${fmt(r.gross)}</span></div>
+      <div class="s">${esc(r.product_name)} · 🏪 ${esc(r.supplier_name)}<br>🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ ${r.influencers} مؤثّر · 📦 باقٍ ${r.stock_left}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       📌 تُحسب الأرباح على الطلبات بحالة <b>«تم التوصيل»</b> فقط. العمولة تُحفظ مع كل طلب لحظة الشراء، فتغيير نسبة مشهور لاحقاً لا يغيّر الأرباح السابقة.<br>
       ⚠️ لا تشمل مصاريفك (أجرة الموصّل، الإعلانات، الاشتراكات): اطرحها لتعرف الربح الصافي.</div></div>`;
