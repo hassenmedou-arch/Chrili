@@ -441,8 +441,8 @@ function editProduct(id){
     <label>المشهور صاحب المنتج</label>
     <select id="fCeleb">${CELEBS.map(c=>`<option value="${c.id}" ${c.id===p.celebrity_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     <label>اسم المنتج</label><input class="field" id="fName" value="${esc(p.name)}">
-    <label>التاجر الذي يجهّز هذا المنتج</label>
-    <select id="fMerch"><option value="">— لا أحد (أنت تجهّزه) —</option>${MERCHANTS.map(m=>`<option value="${m.id}" ${m.id===p.merchant_id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+    <label>المخزون (صاحب البضاعة)</label>
+    <select id="fMerch"><option value="">— تلقائي: مخزون المشهور إن وُجد، وإلا مخزون اشريلي —</option>${supOptions(p.merchant_id)}</select>
     <label>الوصف (اختياري)</label><textarea id="fDesc">${esc(p.description||'')}</textarea>
     <label>السعر بالأوقية</label><input class="field" id="fPrice" inputmode="decimal" value="${esc(p.price)}">
     <label>الكمية المتوفرة</label><input class="field" id="fStock" inputmode="numeric" value="${esc(p.stock)}">
@@ -511,7 +511,7 @@ async function renderCatalog(){
           ${vs.length?'<br>المقاسات: '+vs.map(v=>`<span dir="ltr" style="font-family:monospace">${esc(v.code)}</span> ${esc(v.label)}`).join(' · '):''}</div></div></div>
         ${offs.map(o=>{ const v=vs.find(x=>x.id===o.variant_id); const ls=listings(o.id);
           return `<div class="s" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:8px;color:var(--ink)">
-            <b dir="ltr" style="font-family:monospace">${esc(o.code)}</b> · 🏪 ${esc(sup(o.supplier_id).name||'')}${v?' · '+esc(v.label):''} ${o.active?'':'<span class="pill" style="background:#999">موقوف</span>'}<br>
+            <b dir="ltr" style="font-family:monospace">${esc(o.code)}</b> · ${stk(sup(o.supplier_id).stock_type).i} ${esc(sup(o.supplier_id).name||'')}${v?' · '+esc(v.label):''} ${o.active?'':'<span class="pill" style="background:#999">موقوف</span>'}<br>
             💰 البيع ${fmt(o.base_price)}${o.cost_price!=null?' · الشراء '+fmt(o.cost_price):''} · 📦 المخزون المشترك <b style="color:${o.stock<=3?'var(--danger)':'inherit'}">${o.stock}</b><br>
             ⭐ ${ls.length?ls.map(l=>esc((CELEBS.find(c=>c.id===l.celebrity_id)||{}).name||'')+(Number(l.price)!==Number(o.base_price)?' ('+fmt(l.price)+')':'')).join('، '):'لا يعرضه أي مؤثّر بعد'}
             <div class="acts" style="margin-top:6px"><button class="sbtn" onclick="editOffer('${p.id}','${o.id}')">✏️ المرجع</button>
@@ -583,7 +583,8 @@ function editOffer(pid, oid){
   if(!MERCHANTS.length) return toast('أضف مورّداً أولاً من تبويب «التجّار»');
   sheet(`<h3>${oid?'المرجع '+esc(o.code):'مرجع جديد لـ '+esc(p.name)}</h3>
     <p class="hint">المرجع = هذا المنتج عند مورّد معيّن. كل المؤثّرين الذين يعرضونه يتقاسمون مخزونه.</p>
-    <label>المورّد</label><select id="oSup" ${oid?'disabled':''}>${MERCHANTS.map(m=>`<option value="${m.id}" ${m.id===o.supplier_id?'selected':''}>${esc(m.code)} · ${esc(m.name)}</option>`).join('')}</select>
+    <label>المخزون (صاحب البضاعة)</label><select id="oSup" ${oid?'disabled':''}>${supOptions(o.supplier_id)}</select>
+    <p class="hint">بالترتيب: 🟢 اشريلي · ⭐ مشهور (بضاعته الخاصة) · 🏪 تاجر. لإنشاء مخزون لمشهور اضغط «⭐ بضاعته الخاصة» في بطاقته.</p>
     ${vs.length?`<label>المقاس</label><select id="oVar" ${oid?'disabled':''}><option value="">— بدون مقاس —</option>${vs.map(v=>`<option value="${v.id}" ${v.id===o.variant_id?'selected':''}>${esc(v.code)} · ${esc(v.label)}</option>`).join('')}</select>`:''}
     <label>سعر البيع الأساسي (أوقية)</label><input class="field" id="oPrice" inputmode="decimal" value="${esc(o.base_price)}">
     <label>سعر الشراء من المورّد (اختياري، لا يراه إلا الإدارة)</label><input class="field" id="oCost" inputmode="decimal" value="${esc(o.cost_price??'')}">
@@ -654,6 +655,7 @@ async function renderCelebs(){
       <div class="acts"><button class="sbtn" onclick="editCeleb('${c.id}')">✏️ تعديل</button>
         <button class="sbtn" onclick="prodFilter='${c.id}';go('products')">🏷️ منتجاته</button>
         <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" href="merchant.html?as=celeb:${c.id}">👁️ واجهته</a>
+        <button class="sbtn" onclick="starStock('${c.id}')">⭐ بضاعته الخاصة</button>
         ${me.role==='admin'&&!c.owner_id?`<button class="sbtn pri" onclick="celebAccount('${c.id}')">🔑 حساب ليدير واجهته</button>`:''}
         <button class="sbtn" onclick="toggleActive('celebrities','${c.id}',${!c.active})">${c.active?'🙈 إخفاء':'👁️ إظهار'}</button>
         <button class="sbtn dan" onclick="delRow('celebrities','${c.id}')">🗑️ حذف</button></div></div>`).join('')
@@ -789,13 +791,13 @@ async function renderPartners(){
   const cnt=id=>PRODUCTS.filter(p=>p.partner_id===id).length;
   const when=d=>d?new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'لم تتم بعد';
   const mHtml=`
-    <h3 style="margin:6px 0 8px">🏪 حسابات التجّار</h3>
+    <h3 style="margin:6px 0 8px">📦 المخازن الثلاثة</h3>
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       المورّدون ليست لهم واجهة في التطبيق: فريق اشريلي يدير منتجاتهم ومخزونهم وطلبات التجهيز من هنا ومن تبويب «الطلبات».<br>
       🏷️ حدّد لكل منتج تاجره من تبويب «المنتجات» (أو من إعدادات الربط أدناه).</div></div>
-    <div class="toolbar"><button class="sbtn pri" onclick="addMerchant()">+ حساب تاجر</button>
-      <span style="color:var(--muted);font-weight:700">${MERCHANTS.length} تاجر</span></div>
-    ${MERCHANTS.map(m=>`<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(m.code||'')}</span> · ${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
+    <div class="toolbar"><button class="sbtn" onclick="addChriliStock()">+ 🟢 مستودع اشريلي</button><button class="sbtn pri" onclick="addMerchant()">+ 🏪 تاجر</button>
+      <span style="color:var(--muted);font-weight:700">⭐ مخزون المشهور يُنشأ من بطاقته في تبويب المشاهير</span></div>
+    ${MERCHANTS.map((m,i)=>`${i===0||MERCHANTS[i-1].stock_type!==m.stock_type?`<h4 style="margin:16px 0 6px;color:${stk(m.stock_type).c}">${stk(m.stock_type).o}) ${stk(m.stock_type).i} ${stk(m.stock_type).l}</h4>`:''}<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(m.code||'')}</span> · ${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
         <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">⏳ ${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">✅ ${ready(m.id)} جاهز</span>`:''}</span></div>
       <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج · 💰 عمولة اشريلي ${Number(m.platform_percent??5)}%</div>
       <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم والعمولة</button>
@@ -987,9 +989,12 @@ async function renderProfit(){
     ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t">${fmt(r.gross)}</span></div>
       <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة<br>⭐ للمؤثّر: <b>${fmt(r.influencer_due)}</b> · 💰 لاشريلي: <b style="color:#2E7D5B">${fmt(r.platform)}</b> · 🏪 للمورّدين: ${fmt(r.supplier_due)}</div></div>`).join('')
       || '<div class="empty">لا توجد طلبات مُسلَّمة في هذه الفترة</div>'}
-    <h3 style="margin:18px 0 8px">حسب المورّد (التاجر)</h3>
+    <h3 style="margin:18px 0 8px">حسب المخزون (اشريلي · المشهور · التاجر)</h3>
+    <div class="stats">${['chrili','star','merchant'].map(t=>{ const rs=(bySup.data||[]).filter(r=>r.stock_type===t), g=k=>rs.reduce((a,r)=>a+Number(r[k]||0),0);
+      return `<div class="stat"><div class="k">${stk(t).o}) ${stk(t).i} ${stk(t).l}</div><div class="v" style="color:${stk(t).c}">${fmt(g('delivered_gross'))}</div>
+        <div class="k" style="margin-top:4px">${t==='chrili'?'💰 لاشريلي (ثمن البضاعة)':t==='star'?'⭐ للمشاهير (ثمن بضاعتهم)':'🏪 للتجّار'}: ${fmt(g('supplier_due'))}</div></div>`; }).join('')}</div>
     <p class="s" style="margin-bottom:6px">ما بيع من عند كل مورّد ومن كم واجهة، وحصّته بعد عمولة المؤثّر وعمولة اشريلي (الطلبات المسلَّمة).</p>
-    ${(bySup.data||[]).map(r=>`<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(r.supplier_code)}</span> · ${esc(r.supplier_name)}</span><span class="t">${fmt(r.gross)}</span></div>
+    ${(bySup.data||[]).map(r=>`<div class="card"><div class="hd"><span class="t">${stk(r.stock_type).i} <span dir="ltr" style="font-family:monospace">${esc(r.supplier_code)}</span> · ${esc(r.supplier_name)}</span><span class="t">${fmt(r.gross)}</span></div>
       <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ من ${r.influencers} واجهة · عمولة اشريلي ${Number(r.platform_percent)}%<br>مسلَّم ${fmt(r.delivered_gross)} ← 🏪 تدفع له: <b>${fmt(r.supplier_due)}</b> · ⭐ للمؤثّرين ${fmt(r.influencer_due)} · 💰 لاشريلي ${fmt(r.platform)}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <h3 style="margin:18px 0 8px">حسب المرجع (مورّد + منتج)</h3>
     <p class="s" style="margin-bottom:6px">كل الطلبات غير الملغاة في الفترة، مع المخزون المتبقي عند المورّد.</p>
@@ -1000,9 +1005,30 @@ async function renderProfit(){
       ⚠️ لا تشمل مصاريفك (أجرة الموصّل، الإعلانات، الاشتراكات): اطرحها لتعرف الربح الصافي.</div></div>`;
 }
 let MERCHANTS=[];
+/* أنواع المخزون بالترتيب: 1) اشريلي  2) المشهور  3) التاجر */
+const STK={ chrili:{i:'🟢',l:'مخزون اشريلي',o:1,c:'#2E7D5B'}, star:{i:'⭐',l:'مخزون المشهور',o:2,c:'#6b3fa0'}, merchant:{i:'🏪',l:'مخزون التاجر',o:3,c:'#b7791f'} };
+const stk=t=>STK[t]||STK.merchant;
+const stkPill=t=>`<span class="pill" style="background:${stk(t).c}">${stk(t).i} ${stk(t).l}</span>`;
 async function loadMerchants(){
-  const { data, error } = await db.from('merchants').select('*').order('name');
-  if(error) throw error; MERCHANTS=data||[];
+  const { data, error } = await db.from('merchants').select('*');
+  if(error) throw error;
+  MERCHANTS=(data||[]).sort((a,b)=>stk(a.stock_type).o-stk(b.stock_type).o || String(a.code).localeCompare(String(b.code)));
+}
+const supOptions=sel=>['chrili','star','merchant'].map(t=>{ const ms=MERCHANTS.filter(m=>m.stock_type===t&&m.active);
+  return ms.length?`<optgroup label="${stk(t).o}) ${stk(t).i} ${stk(t).l}">${ms.map(m=>`<option value="${m.id}" ${m.id===sel?'selected':''}>${esc(m.code)} · ${esc(m.name)}</option>`).join('')}</optgroup>`:''; }).join('');
+async function starStock(cid){
+  const { data, error } = await db.rpc('ensure_star_stock',{ p_celeb:cid });
+  if(error) return toast('تعذّر: '+error.message);
+  await loadMerchants(); const m=MERCHANTS.find(x=>x.id===data);
+  toast('⭐ مخزون المشهور جاهز: '+(m?m.code:'')+' — أضف بضاعته من الكتالوج «+ مرجع» واختر هذا المخزون');
+}
+function addChriliStock(){
+  sheet(`<h3>🟢 مستودع اشريلي جديد</h3><label>الاسم</label><input class="field" id="mName" placeholder="مثلاً: مستودع تفرغ زينة">
+    <button class="btn" id="saveBtn">إنشاء</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  $('saveBtn').onclick=async()=>{ const name=$('mName').value.trim(); if(name.length<2) return toast('أدخل الاسم');
+    busy(true); const { error }=await db.from('merchants').insert({ name, stock_type:'chrili' });
+    if(error){ busy(false); return toast('تعذّر: '+error.message); } closeSheet(); toast('تم ✅'); renderPartners(); };
 }
 function addMerchant(){
   sheet(`<h3>حساب تاجر جديد</h3>
