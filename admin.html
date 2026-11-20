@@ -302,20 +302,28 @@ function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.me
 async function editShipping(){
   const { data } = await db.from('app_settings').select('key,value');
   const g=k=>(data||[]).find(r=>r.key===k)?.value;
-  sheet(`<h3>🚚 إعدادات التوصيل</h3>
+  sheet(`<h3>⚙️ الإعدادات</h3><h3 style="margin-top:4px">🚚 التوصيل</h3>
     <label>سعر التوصيل (أوقية)</label><input class="field" id="sFee" inputmode="numeric" value="${esc(g('shipping_fee')??120)}">
     <label>التوصيل مجاني ابتداءً من (أوقية)</label><input class="field" id="sFree" inputmode="numeric" value="${esc(g('free_shipping_from')??10000)}">
     <p class="hint">يُطبَّق على الطلبات الجديدة فقط.</p>
+    <h3 style="margin-top:18px">📱 فتح الحسابات</h3>
+    <label>طريقة تأكيد رقم الزبون</label><select id="sMode">
+      <option value="2" ${Number(g('signup_mode')??1)===2?'selected':''}>💬 رسالة واتساب يرسلها الزبون، وأنا أؤكّد (مجاني)</option>
+      <option value="1" ${Number(g('signup_mode')??1)===1?'selected':''}>📩 رمز SMS تلقائي (يحتاج مزوّد رسائل)</option></select>
+    <label>رقم واتساب اشريلي (يستقبل رسائل التأكيد)</label><input class="field" id="sWa" inputmode="numeric" placeholder="8 أرقام" value="${esc(g('whatsapp_number')?String(Math.trunc(g('whatsapp_number'))):'')}">
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{
     const fee=Number($('sFee').value), free=Number($('sFree').value);
     if(!(fee>=0)||!(free>=0)) return toast('أدخل أرقاماً صحيحة');
+    const wa=$('sWa').value.trim(); if(!/^[234]\d{7}$/.test(wa)) return toast('رقم واتساب: 8 أرقام يبدأ بـ 2 أو 3 أو 4');
     busy(true);
     const r1=await db.from('app_settings').update({value:fee, updated_at:new Date().toISOString()}).eq('key','shipping_fee');
     const r2=await db.from('app_settings').update({value:free, updated_at:new Date().toISOString()}).eq('key','free_shipping_from');
-    if(r1.error||r2.error){ busy(false); return toast('تعذّر الحفظ'); }
-    closeSheet(); toast('تم حفظ إعدادات التوصيل ✅'); renderStats();
+    const r3=await db.from('app_settings').update({value:Number($('sMode').value), updated_at:new Date().toISOString()}).eq('key','signup_mode');
+    const r4=await db.from('app_settings').update({value:Number(wa), updated_at:new Date().toISOString()}).eq('key','whatsapp_number');
+    if(r1.error||r2.error||r3.error||r4.error){ busy(false); return toast('تعذّر الحفظ'); }
+    closeSheet(); toast('تم حفظ الإعدادات ✅'); renderStats();
   };
 }
 async function renderStats(){
@@ -337,7 +345,7 @@ async function renderStats(){
   $('main').innerHTML=`
     <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#0E4D3A':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
     <p class="sub">نظرة سريعة على تطبيقك</p>
-    ${me.role==='admin'?'<div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="editShipping()">🚚 إعدادات التوصيل</button></div>':''}
+    ${me.role==='admin'?'<div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="editShipping()">⚙️ الإعدادات (التوصيل وفتح الحسابات)</button></div>':''}
     <div class="stats">
       ${me.role==='admin'?`<div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
       <div class="stat"><div class="k">📦 كل الطلبات</div><div class="v">${orders.length}</div></div>
@@ -355,7 +363,7 @@ async function renderStats(){
 
 /* ================== الطلبات ================== */
 async function renderOrders(){
-  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name),order_items(qty,unit_price,prep_status,merchant_id,celebrity_id,ref_code,products(name))').order('created_at',{ascending:false}).limit(200);
+  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name,phone_verified),order_items(qty,unit_price,prep_status,merchant_id,celebrity_id,ref_code,products(name))').order('created_at',{ascending:false}).limit(200);
   if(orderFilter!=='all') q=q.eq('status',orderFilter);
   const [{ data, error }] = await Promise.all([q, loadMerchants(), CELEBS.length?null:loadCatalog()]);
   if(error) return fail('تعذّر تحميل الطلبات', error);
@@ -374,7 +382,7 @@ function orderCard(o){
   const next={ new:[['confirmed','✔ تأكيد','pri'],['cancelled','✕ إلغاء','dan']], confirmed:[['delivered','🚚 تم التوصيل','pri'],['cancelled','✕ إلغاء','dan']], delivered:[], cancelled:[['new','↺ إرجاع إلى جديد','']] }[o.status]||[];
   return `<div class="card">
     <div class="hd"><span class="t">طلب ${shortId(o.id)}</span>${pill(o.status)}</div>
-    <div class="s">👤 ${esc(o.customer_name||o.profiles?.full_name||'')} · 📞 ${esc(o.phone||'')}<br>📍 ${esc(o.address||'—')}<br>🗓️ ${day(o.created_at)}</div>
+    <div class="s">👤 ${esc(o.customer_name||o.profiles?.full_name||'')} · 📞 ${esc(o.phone||'')}${o.profiles&&o.profiles.phone_verified===false?' <span class="pill" style="background:#b7791f">⚠️ رقم غير مؤكّد — اتصل قبل التوصيل</span>':''}<br>📍 ${esc(o.address||'—')}<br>🗓️ ${day(o.created_at)}</div>
     <div class="s" style="color:var(--ink);margin-top:8px">${items}</div>
     <div class="hd" style="margin-top:8px"><span class="t">الإجمالي</span><span class="t" style="color:var(--brand)">${fmt(o.total)}</span></div>
     ${next.length?`<div class="acts">${next.map(([s,l,c])=>`<button class="sbtn ${c}" onclick="setStatus('${o.id}','${s}')">${l}</button>`).join('')}</div>`:''}
@@ -710,7 +718,7 @@ function editCeleb(id){
 
 /* ================== المستخدمون ================== */
 async function renderUsers(){
-  const { data, error } = await db.from('profiles').select('id,full_name,phone,role,created_at').order('created_at',{ascending:false});
+  const { data, error } = await db.from('profiles').select('id,full_name,phone,role,created_at,phone_verified,verify_code').order('created_at',{ascending:false});
   if(error) return fail('تعذّر تحميل المستخدمين', error);
   const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير',merchant:'تاجر'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#0E4D3A',merchant:'#b7791f'};
   USERS=data;
@@ -718,16 +726,28 @@ async function renderUsers(){
   $('main').innerHTML=`<div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} مستخدم مسجّل · ${admins} موظف</span></div>
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       ➕ <b>لإضافة شخص:</b> اضغط «إضافة مستخدم»، واختر «زبون» أو «موظف»، ثم أعطه رقمه وكلمة المرور ليدخل بهما.<br>👷 الموظف يدير الطلبات والمنتجات والمشاهير، ولا يرى المستخدمين ولا يمنح الصلاحيات. أنت وحدك ترى كل شيء.</div></div>
+    ${(()=>{ const pend=data.filter(u=>u.phone_verified===false); return pend.length?`<h3 style="margin:8px 0">⏳ بانتظار تأكيد الرقم (${pend.length})</h3>
+      <div class="card" style="background:#E8F8EE"><div class="s" style="color:var(--ink)">📱 كل زبون جديد يرسل لك على واتساب رسالة فيها رمزه. إذا وصلتك الرسالة <b>من نفس الرقم وبنفس الرمز</b> اضغط «✅ تأكيد».</div></div>
+      ${pend.map(u=>`<div class="card"><div class="hd"><span class="t">${esc(u.full_name||'—')}</span><span class="t" dir="ltr" style="font-family:monospace;font-size:18px">${esc(u.verify_code||'—')}</span></div>
+        <div class="s">📞 <span dir="ltr">${esc(u.phone)}</span> · سجّل في ${day(u.created_at)}</div>
+        <div class="acts"><button class="sbtn pri" onclick="confirmPhone('${u.id}')">✅ تأكيد</button>
+          <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" target="_blank" rel="noopener" href="https://wa.me/222${esc(u.phone)}">💬 واتساب</a></div></div>`).join('')}
+      <h3 style="margin:16px 0 8px">كل المستخدمين</h3>`:''; })()}
     <div class="toolbar"><button class="sbtn pri" onclick="addUser()">+ إضافة مستخدم</button>
       <input class="grow" id="uq" placeholder="🔎 ابحث بالاسم أو الهاتف..." oninput="filterUsers()"></div>
     <div id="ulist">${data.map(u=>`<div class="card" data-k="${esc((u.full_name||'')+' '+u.phone)}"><div class="hd"><span class="t">${esc(u.full_name||'—')}${u.id===me.id?' (أنت)':''}</span>
       <span class="pill" style="background:${roleC[u.role]||'#666'}">${roleL[u.role]||u.role}</span></div>
-      <div class="s">📞 ${esc(u.phone)} · سجّل في ${day(u.created_at)}</div>
+      <div class="s">📞 ${esc(u.phone)} ${u.phone_verified===false?'<span class="pill" style="background:#b7791f">⏳ غير مؤكّد</span>':'<span style="color:#2E7D5B">✔ مؤكّد</span>'} · سجّل في ${day(u.created_at)}</div>
       ${(u.id===me.id||u.role==='admin')?'':u.role==='merchant'?`<div class="acts"><button class="sbtn" onclick="go('partners')">🏪 إدارته من تبويب التجّار</button><button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`:`<div class="acts">${u.role==='staff'
         ?`<button class="sbtn dan" onclick="setRole('${u.id}','customer')">إزالة صلاحية الموظف</button>`
         :`<button class="sbtn pri" onclick="setRole('${u.id}','staff')">👷 اجعله موظفاً</button>`}
         <button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`}
     </div>`).join('')}</div>`;
+}
+async function confirmPhone(id){
+  const { error } = await db.rpc('confirm_phone',{ p_user:id });
+  if(error) return toast('تعذّر التأكيد: '+error.message);
+  toast('تم تأكيد الرقم ✅'); renderUsers();
 }
 async function callAdmin(body){
   const { data, error } = await db.functions.invoke('admin-users', { body });

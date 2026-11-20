@@ -215,7 +215,7 @@ body.has-bar .wrap{padding-bottom:90px}
       <label>كلمة المرور</label>
       <input class="field" id="lPw" type="password" placeholder="••••••" autocomplete="current-password">
       <button class="btn" type="submit" id="lBtn">دخول</button>
-      <p class="hint" style="margin-top:12px"><a href="#" onclick="setTab('reset');return false" style="color:var(--brand)">نسيت كلمة المرور؟</a></p>
+      <p class="hint" style="margin-top:12px"><a href="#" onclick="forgotPw();return false" style="color:var(--brand)">نسيت كلمة المرور؟</a></p>
     </form>
 
     <form id="regForm" class="hidden" onsubmit="doRegister(event)">
@@ -232,7 +232,7 @@ body.has-bar .wrap{padding-bottom:90px}
         <p class="hint"><a href="#" onclick="regReset();return false" style="color:var(--brand)">تغيير الرقم / إعادة الإرسال</a></p>
       </div>
       <button class="btn" type="submit" id="rBtn">إرسال رمز التحقق</button>
-      <p class="hint" style="margin-top:10px">نرسل لك رمزاً برسالة SMS <b>مرة واحدة فقط</b> لتأكيد رقمك. بعدها تدخل دائماً بكلمة المرور.</p>
+      <p class="hint" style="margin-top:10px" id="regHint">نرسل لك رمزاً برسالة SMS <b>مرة واحدة فقط</b> لتأكيد رقمك. بعدها تدخل دائماً بكلمة المرور.</p>
     </form>
 
     <form id="resetForm" class="hidden" onsubmit="doReset(event)">
@@ -384,7 +384,24 @@ function otpInfo(id, r, phone){
     ? `🧪 وضع التجربة (بدون SMS): الرمز هو <b dir="ltr" style="font-size:17px">${r.test_code}</b>`
     : `أرسلنا رمزاً إلى <b dir="ltr">${phone}</b>. لم يصلك؟ يمكنك طلب رمز جديد بعد دقيقة.`;
 }
-let REG_SENT=null, RESET_SENT=null;
+let REG_SENT=null, RESET_SENT=null, SIGNUP_MODE=1, WA_NUM='';
+async function loadAuthSettings(){
+  try{ const { data } = await db.from('app_settings').select('key,value').in('key',['signup_mode','whatsapp_number']);
+    (data||[]).forEach(r=>{ if(r.key==='signup_mode') SIGNUP_MODE=Number(r.value); if(r.key==='whatsapp_number') WA_NUM=String(Math.trunc(Number(r.value))); });
+  }catch(e){}
+  if(SIGNUP_MODE===2){ const b=document.getElementById('rBtn'); if(b) b.textContent='إنشاء الحساب';
+    const h=document.getElementById('regHint'); if(h) h.innerHTML='بعد إنشاء الحساب تؤكّد رقمك <b>برسالة واتساب واحدة</b> إلى اشريلي (مجاناً). بعدها تدخل دائماً بكلمة المرور.'; }
+}
+const waLink=(text)=>`https://wa.me/222${WA_NUM}?text=${encodeURIComponent(text)}`;
+function verifySheetHtml(code, phone){
+  return `<div style="text-align:center">
+    <div style="font-size:44px">📱</div><h3 style="margin:6px 0">أكّد رقمك عبر واتساب</h3>
+    <p class="hint" style="margin-bottom:10px">اضغط الزر، فيفتح واتساب برسالة جاهزة فيها رمزك. اضغط «إرسال» فقط.</p>
+    <div style="font:800 28px Montserrat,sans-serif;letter-spacing:6px;margin:6px 0 14px" dir="ltr">${code}</div>
+    <a class="btn" style="display:block;text-decoration:none;background:#25D366" target="_blank" rel="noopener"
+       href="${waLink('اشريلي — تأكيد رقمي '+phone+' — الرمز: '+code)}">💬 إرسال الرمز عبر واتساب</a>
+    <p class="hint" style="margin-top:10px">يمكنك التسوّق الآن. سيؤكّد فريق اشريلي رقمك بعد وصول رسالتك.</p></div>`;
+}
 async function doRegister(e){
   e.preventDefault();
   const name=document.getElementById('rName').value.trim(), phone=document.getElementById('rPhone').value.trim(), pw=document.getElementById('rPw').value;
@@ -392,6 +409,15 @@ async function doRegister(e){
   if(!/^[234]\d{7}$/.test(phone)) return err('رقم الهاتف 8 أرقام ويبدأ بـ 2 أو 3 أو 4');
   if(pw.length<6) return err('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
   err('');
+  if(SIGNUP_MODE===2){
+    busy('rBtn',true);
+    const r=await otpCall({ action:'signup_wa', phone, password:pw, full_name:name });
+    if(r.error){ busy('rBtn',false,'إنشاء الحساب'); return err(r.error); }
+    const { error } = await db.auth.signInWithPassword({ email: phoneEmail(phone), password: pw });
+    busy('rBtn',false,'إنشاء الحساب');
+    if(error){ setTab('login'); return err('تم إنشاء الحساب ✅ سجّل الدخول الآن'); }
+    return;
+  }
   if(REG_SENT!==phone){
     busy('rBtn',true);
     const r=await otpCall({ action:'send', purpose:'signup', phone });
@@ -411,6 +437,11 @@ async function doRegister(e){
   const { error } = await db.auth.signInWithPassword({ email: phoneEmail(phone), password: pw });
   busy('rBtn',false,'تأكيد وإنشاء الحساب');
   if(error){ setTab('login'); document.getElementById('lPhone').value=phone; return err('تم إنشاء الحساب ✅ سجّل الدخول الآن'); }
+}
+function forgotPw(){
+  if(SIGNUP_MODE===2 && WA_NUM){ const p=document.getElementById('lPhone').value.trim();
+    window.open(waLink('اشريلي — نسيت كلمة المرور. رقم حسابي: '+(p||'........')),'_blank'); return; }
+  setTab('reset');
 }
 function regReset(){ REG_SENT=null; show('rOtpBox',false); document.getElementById('rPhone').readOnly=false; document.getElementById('rBtn').textContent='إرسال رمز التحقق'; }
 async function doReset(e){
@@ -443,7 +474,7 @@ const WORKSPACE = { admin:['admin.html','⚙️','لوحة التحكم'], staff
   celebrity:['merchant.html','⭐','واجهتي'] };
 async function onSignedIn(user){
   const meta = user.user_metadata || {};
-  const { data: prof } = await db.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data: prof } = await db.from('profiles').select('role,phone,phone_verified,verify_code').eq('id', user.id).maybeSingle();
   const role = prof?.role || 'customer';
   // تطبيق واحد: كل شخص يدخل إلى واجهته حسب دوره (إلا إذا طلب المتجر صراحة)
   if (WORKSPACE[role] && !new URLSearchParams(location.search).has('shop')) { location.replace(WORKSPACE[role][0]); return; }
@@ -454,6 +485,15 @@ async function onSignedIn(user){
   show('loading',true); show('auth',false);
   const ok = await loadCatalog();
   show('loading',false); show('app',true);
+  document.getElementById('verifyBar')?.remove();
+  if(prof && prof.phone_verified===false && prof.verify_code){
+    const bar=document.createElement('div'); bar.id='verifyBar';
+    bar.style.cssText='background:#E8F8EE;border-bottom:1px solid #b9e5c9;padding:10px 14px;text-align:center;font-size:14px';
+    bar.innerHTML=`📱 أكّد رقمك: أرسل الرمز <b dir="ltr">${prof.verify_code}</b> عبر واتساب · <a href="#" style="color:#128C4A;font-weight:800" onclick="sheetOpen(verifySheetHtml('${prof.verify_code}','${prof.phone}'));return false">إرسال الآن</a>`;
+    document.getElementById('app').prepend(bar);
+    let seen=false; try{ seen=!!sessionStorage.getItem('vshown_'+user.id); sessionStorage.setItem('vshown_'+user.id,'1'); }catch(e){}
+    if(!seen) setTimeout(()=>sheetOpen(verifySheetHtml(prof.verify_code, prof.phone)),400);
+  }
   if(ok){ const sc=new URLSearchParams(location.search).get('c'); if(sc && C(sc)) go('store',sc); else go('home'); }
 }
 
@@ -720,6 +760,7 @@ function modal(msg,ok){
 }
 
 /* ================== بدء التشغيل ================== */
+loadAuthSettings();
 db.auth.onAuthStateChange((event, session)=>{
   if(session?.user){ if(!me || me.id!==session.user.id) setTimeout(()=>onSignedIn(session.user),0); }
   else setTimeout(onSignedOut,0);
