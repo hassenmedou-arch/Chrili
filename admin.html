@@ -491,7 +491,7 @@ async function renderCatalog(){
   const sup=id=>MERCHANTS.find(m=>m.id===id)||{};
   const listings=oid=>PRODUCTS.filter(p=>p.offer_id===oid);
   const q=catQ.trim().toLowerCase();
-  const list=CAT.prods.filter(p=>!q||[p.code,p.name,p.brand,p.barcode].some(x=>(x||'').toLowerCase().includes(q))
+  const list=CAT.prods.filter(p=>!q||[p.code,p.name,p.brand,p.barcode,(CAT.cats.find(c=>c.id===p.category_id)||{}).code].some(x=>(x||'').toLowerCase().includes(q))
      || CAT.offers.some(o=>o.product_id===p.id&&o.code.toLowerCase().includes(q)));
   $('main').innerHTML=`
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink);line-height:1.8">
@@ -500,14 +500,14 @@ async function renderCatalog(){
     ${me.role==='admin'?`<div class="card"><div class="s" style="color:var(--ink)">🎨 كل صورة جديدة توضع تلقائياً على <b>خلفية اشريلي الموحّدة</b>.</div>
       <div class="acts"><button class="sbtn pri" onclick="restudioAll()">🎨 توحيد خلفية كل الصور الحالية</button></div></div>`:''}
     <div class="toolbar"><button class="sbtn pri" onclick="editCatProd()">+ منتج في الكتالوج</button>
-      <button class="sbtn" onclick="editCategory()">+ فئة</button>
+      <button class="sbtn" onclick="showCategories()">📂 الأقسام</button>
       <input class="field grow" placeholder="🔎 كود أو اسم أو باركود..." value="${esc(catQ)}" oninput="catQ=this.value;clearTimeout(window._cq);window._cq=setTimeout(renderCatalog,350)">
-      <span style="color:var(--muted);font-weight:700">${CAT.prods.length} منتج · ${CAT.offers.length} مرجع · ${CAT.cats.length} فئة</span></div>
+      <span style="color:var(--muted);font-weight:700">${CAT.prods.length} منتج · ${CAT.offers.length} مرجع · ${CAT.cats.length} قسم</span></div>
     ${list.map(p=>{ const offs=CAT.offers.filter(o=>o.product_id===p.id); const vs=CAT.vars.filter(v=>v.product_id===p.id);
       return `<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
         ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(p.name)} ${p.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</div>
-          <div class="s"><b dir="ltr" style="font-family:monospace">${esc(p.code)}</b> · ${esc(catName(p.category_id))}${p.brand?' · '+esc(p.brand):''}${p.barcode?' · <span dir="ltr">'+esc(p.barcode)+'</span>':''}
+          <div class="s"><b dir="ltr" style="font-family:monospace">${esc(p.code)}</b> · ${catLabel(p.category_id)}${p.brand?' · '+esc(p.brand):''}${p.barcode?' · <span dir="ltr">'+esc(p.barcode)+'</span>':''}
           ${vs.length?'<br>المقاسات: '+vs.map(v=>`<span dir="ltr" style="font-family:monospace">${esc(v.code)}</span> ${esc(v.label)}`).join(' · '):''}</div></div></div>
         ${offs.map(o=>{ const v=vs.find(x=>x.id===o.variant_id); const ls=listings(o.id);
           return `<div class="s" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:8px;color:var(--ink)">
@@ -520,13 +520,30 @@ async function renderCatalog(){
           <button class="sbtn" onclick="addVariant('${p.id}')">+ مقاس</button>
           <button class="sbtn" onclick="editCatProd('${p.id}')">✏️ البطاقة</button></div></div>`; }).join('') || '<div class="empty">لا توجد نتائج</div>'}`;
 }
+/* شجرة الأقسام: رئيسي C01 → فرعي C0101 */
+const catMains=()=>CAT.cats.filter(c=>!c.parent_id).sort((a,b)=>a.code.localeCompare(b.code));
+const catSubs=id=>CAT.cats.filter(c=>c.parent_id===id).sort((a,b)=>a.code.localeCompare(b.code));
+const catOptions=sel=>catMains().map(m=>`<optgroup label="${esc(m.code)} ${m.icon||''} ${esc(m.name)}">
+  <option value="${m.id}" ${m.id===sel?'selected':''}>${esc(m.code)} · ${esc(m.name)} (عام)</option>
+  ${catSubs(m.id).map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.code)} · ${esc(c.name)}</option>`).join('')}</optgroup>`).join('');
+const catLabel=id=>{ const c=CAT.cats.find(x=>x.id===id); if(!c) return 'بدون قسم'; const p=c.parent_id&&CAT.cats.find(x=>x.id===c.parent_id);
+  return `<span dir="ltr" style="font-family:monospace">${esc(c.code)}</span> ${p?esc(p.name)+' › ':''}${esc(c.name)}`; };
+function showCategories(){
+  sheet(`<h3>📂 الأقسام (${catMains().length} رئيسي · ${CAT.cats.length-catMains().length} فرعي)</h3>
+    <p class="hint">رمز القسم الرئيسي حرفان بعد C (C09 = أكل)، والفرعي أربعة (C0901 = تمور).</p>
+    ${catMains().map(m=>`<div style="margin:10px 0"><b>${m.icon||''} <span dir="ltr" style="font-family:monospace">${esc(m.code)}</span> ${esc(m.name)}</b>
+      <div class="s" style="line-height:1.9">${catSubs(m.id).map(c=>`<span dir="ltr" style="font-family:monospace">${esc(c.code)}</span> ${esc(c.name)}`).join(' · ')}</div></div>`).join('')}
+    <button class="btn" onclick="editCategory()">+ قسم جديد</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إغلاق</button>`);
+}
 function editCategory(){
-  sheet(`<h3>فئة جديدة</h3><p class="hint">الكود (C01، C02…) يُعطى تلقائياً.</p>
-    <label>اسم الفئة</label><input class="field" id="cName" placeholder="مثال: عناية بالبشرة">
+  sheet(`<h3>قسم جديد</h3><p class="hint">الرمز يُعطى تلقائياً: رئيسي C21… أو فرعي تحت قسمه (مثلاً C0109).</p>
+    <label>تحت أي قسم؟</label><select id="cParent"><option value="">— قسم رئيسي جديد —</option>${catMains().map(m=>`<option value="${m.id}">${esc(m.code)} · ${esc(m.name)}</option>`).join('')}</select>
+    <label>اسم القسم</label><input class="field" id="cName" placeholder="مثال: عطور أطفال">
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{ const name=$('cName').value.trim(); if(name.length<2) return toast('أدخل اسم الفئة');
-    busy(true); const { error }=await db.from('categories').insert({name});
+    busy(true); const { error }=await db.from('categories').insert({name, parent_id:$('cParent').value||null});
     if(error){ busy(false); return toast(/duplicate|unique/.test(error.message)?'هذه الفئة موجودة':'تعذّر الحفظ: '+error.message); }
     closeSheet(); toast('تمت إضافة الفئة ✅'); renderCatalog(); };
 }
@@ -536,7 +553,7 @@ function editCatProd(id){
     ${id?'':'<p class="hint">الكود (P000001…) يُعطى تلقائياً. قبل الحفظ أبحث عن منتج مشابه حتى لا يتكرر.</p>'}
     <label>اسم المنتج</label><input class="field" id="kName" value="${esc(p.name)}">
     <label>الماركة (اختياري)</label><input class="field" id="kBrand" value="${esc(p.brand||'')}">
-    <label>الفئة</label><select id="kCat"><option value="">— بدون فئة —</option>${CAT.cats.map(c=>`<option value="${c.id}" ${c.id===p.category_id?'selected':''}>${esc(c.code)} · ${esc(c.name)}</option>`).join('')}</select>
+    <label>القسم</label><select id="kCat"><option value="">— اختر القسم —</option>${catOptions(p.category_id)}</select>
     <label>الباركود (اختياري، يمنع التكرار)</label><input class="field" id="kBar" dir="ltr" value="${esc(p.barcode||'')}">
     <label>الوصف</label><textarea id="kDesc">${esc(p.description||'')}</textarea>
     <label>الصورة</label><input class="field" id="kImg" type="file" accept="image/*">
