@@ -215,6 +215,7 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="studio.js"></script>
+<script src="dupcheck.js"></script>
 <script>
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
@@ -457,6 +458,11 @@ function editProduct(id){
     if(row.name.length<2) return toast('أدخل اسم المنتج');
     if(!(row.price>=0)) return toast('أدخل سعرًا صحيحًا');
     if(!(row.stock>=0)) return toast('أدخل كمية صحيحة');
+    if(!id){
+      const ans=await dupAsk(db,row.name,{canUse:true});
+      if(ans==='cancel') return;
+      if(ans&&ans.use){ closeSheet(); catQ=ans.use.code; go('catalog'); toast('المنتج موجود '+ans.use.code+' — اضغط «⭐ اعرضه عند مؤثّر» تحت مرجعه'); return; }
+    }
     busy(true);
     try{
       const url=await uploadImage($('fImg').files[0]); if(url) row.image_url=url;
@@ -546,14 +552,12 @@ function editCatProd(id){
     if(row.name.length<2) return toast('أدخل اسم المنتج');
     if(row.barcode && !/^[0-9A-Za-z-]{4,40}$/.test(row.barcode)) return toast('الباركود: أرقام وحروف فقط');
     if(!confirmed){
-      const { data:sim } = await db.rpc('find_similar_products',{q:row.name,p_barcode:row.barcode});
-      if(sim&&sim.length){
-        $('kSim').innerHTML=`<div class="card" style="background:#FFF4DC;margin-top:12px"><div class="s" style="color:var(--ink)">⚠️ <b>منتجات مشابهة موجودة</b> — هل هو أحدها؟ إن كان كذلك أضف له <b>مرجعاً</b> بدل منتج جديد:<br>
-          ${sim.map(x=>`<b dir="ltr" style="font-family:monospace">${esc(x.code)}</b> ${esc(x.name)}${x.brand?' · '+esc(x.brand):''}${x.barcode&&x.barcode===row.barcode?' <b style="color:var(--danger)">(نفس الباركود)</b>':''}`).join('<br>')}
-          <br><br>إن كان منتجاً مختلفاً فعلاً، اضغط «حفظ» مرة ثانية.</div></div>`;
-        if(sim.some(x=>row.barcode&&x.barcode===row.barcode)) return toast('هذا الباركود مسجّل لمنتج آخر');
-        confirmed=true; return;
-      }
+      if(row.barcode){ const { data:bs } = await db.rpc('find_similar_products',{q:'',p_barcode:row.barcode});
+        const hit=(bs||[]).find(x=>x.barcode===row.barcode); if(hit) return toast('هذا الباركود مسجّل للمنتج '+hit.code+' · '+hit.name); }
+      const ans=await dupAsk(db,row.name,{canUse:true});
+      if(ans==='cancel') return;
+      if(ans&&ans.use){ closeSheet(); catQ=ans.use.code; go('catalog'); toast('هذا هو المنتج الموجود '+ans.use.code+' — أضف له «+ مرجع (مورّد)» أو اعرضه عند مؤثّر'); return; }
+      confirmed=true;
     }
     busy(true);
     try{ const url=await uploadImage($('kImg').files[0]); if(url) row.image_url=url;

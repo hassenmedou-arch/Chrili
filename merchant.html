@@ -124,6 +124,7 @@ textarea.field{min-height:80px;resize:vertical}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="studio.js"></script>
+<script src="dupcheck.js"></script>
 <script>
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
@@ -312,6 +313,7 @@ function editP(id){
     if (name.length < 2) return toast('أدخل اسم المنتج');
     if (!(price > 0)) return toast('أدخل سعراً صحيحاً');
     if (!(stock >= 0)) return toast('أدخل كمية صحيحة');
+    if (!id) { const ans = await dupAsk(db, name, { canUse: false }); if (ans === 'cancel') return; }
     const b = $('saveBtn'); b.disabled = true; b.textContent = '⏳ جارٍ الحفظ...';
     try {
       let img = null; const f = $('fImg').files[0];
