@@ -215,16 +215,39 @@ body.has-bar .wrap{padding-bottom:90px}
       <label>كلمة المرور</label>
       <input class="field" id="lPw" type="password" placeholder="••••••" autocomplete="current-password">
       <button class="btn" type="submit" id="lBtn">دخول</button>
+      <p class="hint" style="margin-top:12px"><a href="#" onclick="setTab('reset');return false" style="color:var(--brand)">نسيت كلمة المرور؟</a></p>
     </form>
 
     <form id="regForm" class="hidden" onsubmit="doRegister(event)">
       <label>الاسم الكامل</label>
       <input class="field" id="rName" placeholder="اسمك">
       <label>رقم الهاتف</label>
-      <input class="field" id="rPhone" inputmode="numeric" placeholder="8 أرقام">
+      <input class="field" id="rPhone" inputmode="numeric" placeholder="8 أرقام" oninput="if(REG_SENT&&this.value!==REG_SENT)regReset()">
       <label>كلمة المرور</label>
       <input class="field" id="rPw" type="password" placeholder="6 أحرف على الأقل" autocomplete="new-password">
-      <button class="btn" type="submit" id="rBtn">إنشاء الحساب</button>
+      <div id="rOtpBox" class="hidden">
+        <label>رمز التحقق المرسل إلى هاتفك</label>
+        <input class="field" id="rCode" inputmode="numeric" maxlength="6" placeholder="6 أرقام" autocomplete="one-time-code" style="letter-spacing:6px;text-align:center;font-size:20px">
+        <p class="hint" id="rOtpInfo"></p>
+        <p class="hint"><a href="#" onclick="regReset();return false" style="color:var(--brand)">تغيير الرقم / إعادة الإرسال</a></p>
+      </div>
+      <button class="btn" type="submit" id="rBtn">إرسال رمز التحقق</button>
+      <p class="hint" style="margin-top:10px">نرسل لك رمزاً برسالة SMS <b>مرة واحدة فقط</b> لتأكيد رقمك. بعدها تدخل دائماً بكلمة المرور.</p>
+    </form>
+
+    <form id="resetForm" class="hidden" onsubmit="doReset(event)">
+      <h3 style="margin-bottom:6px">استرجاع كلمة المرور</h3>
+      <label>رقم الهاتف</label>
+      <input class="field" id="xPhone" inputmode="numeric" placeholder="8 أرقام">
+      <div id="xOtpBox" class="hidden">
+        <label>رمز التحقق</label>
+        <input class="field" id="xCode" inputmode="numeric" maxlength="6" placeholder="6 أرقام" autocomplete="one-time-code" style="letter-spacing:6px;text-align:center;font-size:20px">
+        <label>كلمة المرور الجديدة</label>
+        <input class="field" id="xPw" type="password" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+        <p class="hint" id="xOtpInfo"></p>
+      </div>
+      <button class="btn" type="submit" id="xBtn">إرسال رمز التحقق</button>
+      <p class="hint" style="margin-top:12px"><a href="#" onclick="setTab('login');return false" style="color:var(--brand)">→ رجوع لتسجيل الدخول</a></p>
     </form>
     <div class="err" id="authErr"></div>
     <p class="hint"><a href="privacy.html" style="color:var(--brand)">سياسة الخصوصية</a></p>
@@ -331,7 +354,7 @@ function saveCart(){ try{ localStorage.setItem('chrili_cart_'+me.id, JSON.string
 function setTab(t){
   document.getElementById('tabLogin').classList.toggle('on',t==='login');
   document.getElementById('tabReg').classList.toggle('on',t==='reg');
-  show('loginForm', t==='login'); show('regForm', t==='reg'); err('');
+  show('loginForm', t==='login'); show('regForm', t==='reg'); show('resetForm', t==='reset'); err('');
 }
 function err(m){ document.getElementById('authErr').textContent=m; }
 function busy(btnId, on, label){ const b=document.getElementById(btnId); b.disabled=on; b.textContent=on?'⏳ لحظة...':label; }
@@ -347,24 +370,73 @@ async function doLogin(e){
   if(error) return err('رقم الهاتف أو كلمة المرور غير صحيحة');
 }
 
+/* رمز SMS مرة واحدة عند فتح الحساب (وعند نسيان كلمة المرور فقط) */
+async function otpCall(body){
+  try{
+    const { data, error } = await db.functions.invoke('phone-otp', { body });
+    if(error){ let m=''; try{ m=(await error.context.json()).error; }catch(_){}
+      return { error: m || 'تعذّر الاتصال، حاول مرة أخرى' }; }
+    return data || {};
+  }catch(e){ return { error:'تعذّر الاتصال، حاول مرة أخرى' }; }
+}
+function otpInfo(id, r, phone){
+  document.getElementById(id).innerHTML = r.test_code
+    ? `🧪 وضع التجربة (بدون SMS): الرمز هو <b dir="ltr" style="font-size:17px">${r.test_code}</b>`
+    : `أرسلنا رمزاً إلى <b dir="ltr">${phone}</b>. لم يصلك؟ يمكنك طلب رمز جديد بعد دقيقة.`;
+}
+let REG_SENT=null, RESET_SENT=null;
 async function doRegister(e){
   e.preventDefault();
   const name=document.getElementById('rName').value.trim(), phone=document.getElementById('rPhone').value.trim(), pw=document.getElementById('rPw').value;
   if(name.length<2) return err('أدخل اسمًا صحيحًا');
-  if(!/^\d{8}$/.test(phone)) return err('رقم الهاتف يجب أن يكون 8 أرقام');
+  if(!/^[234]\d{7}$/.test(phone)) return err('رقم الهاتف 8 أرقام ويبدأ بـ 2 أو 3 أو 4');
   if(pw.length<6) return err('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-  busy('rBtn',true);
-  const { data, error } = await db.auth.signUp({
-    email: phoneEmail(phone), password: pw,
-    options: { data: { full_name: name, phone } }
-  });
-  busy('rBtn',false,'إنشاء الحساب');
-  if(error){
-    if(/registered|exists/i.test(error.message)) return err('هذا الرقم مسجّل مسبقًا، سجّل الدخول');
-    reportError('signup: ' + error.message);
-    return err('تعذّر إنشاء الحساب: ' + error.message);
+  err('');
+  if(REG_SENT!==phone){
+    busy('rBtn',true);
+    const r=await otpCall({ action:'send', purpose:'signup', phone });
+    busy('rBtn',false,'إرسال رمز التحقق');
+    if(r.error) return err(r.error);
+    REG_SENT=phone; show('rOtpBox',true); otpInfo('rOtpInfo',r,phone);
+    document.getElementById('rBtn').textContent='تأكيد وإنشاء الحساب';
+    document.getElementById('rPhone').readOnly=true;
+    setTimeout(()=>document.getElementById('rCode').focus(),50);
+    return;
   }
-  if(!data.session) return err('تم إنشاء الحساب، لكن يجب إيقاف «Confirm email» في Supabase');
+  const code=document.getElementById('rCode').value.trim();
+  if(!/^\d{6}$/.test(code)) return err('أدخل الرمز المكوّن من 6 أرقام');
+  busy('rBtn',true);
+  const r=await otpCall({ action:'signup', phone, code, password:pw, full_name:name });
+  if(r.error){ busy('rBtn',false,'تأكيد وإنشاء الحساب'); return err(r.error); }
+  const { error } = await db.auth.signInWithPassword({ email: phoneEmail(phone), password: pw });
+  busy('rBtn',false,'تأكيد وإنشاء الحساب');
+  if(error){ setTab('login'); document.getElementById('lPhone').value=phone; return err('تم إنشاء الحساب ✅ سجّل الدخول الآن'); }
+}
+function regReset(){ REG_SENT=null; show('rOtpBox',false); document.getElementById('rPhone').readOnly=false; document.getElementById('rBtn').textContent='إرسال رمز التحقق'; }
+async function doReset(e){
+  e.preventDefault();
+  const phone=document.getElementById('xPhone').value.trim();
+  if(!/^[234]\d{7}$/.test(phone)) return err('رقم الهاتف 8 أرقام ويبدأ بـ 2 أو 3 أو 4');
+  err('');
+  if(RESET_SENT!==phone){
+    busy('xBtn',true);
+    const r=await otpCall({ action:'send', purpose:'reset', phone });
+    busy('xBtn',false,'إرسال رمز التحقق');
+    if(r.error) return err(r.error);
+    RESET_SENT=phone; show('xOtpBox',true); otpInfo('xOtpInfo',r,phone);
+    document.getElementById('xBtn').textContent='تغيير كلمة المرور';
+    document.getElementById('xPhone').readOnly=true;
+    return;
+  }
+  const code=document.getElementById('xCode').value.trim(), pw=document.getElementById('xPw').value;
+  if(!/^\d{6}$/.test(code)) return err('أدخل الرمز المكوّن من 6 أرقام');
+  if(pw.length<6) return err('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+  busy('xBtn',true);
+  const r=await otpCall({ action:'reset', purpose:'reset', phone, code, password:pw });
+  if(r.error){ busy('xBtn',false,'تغيير كلمة المرور'); return err(r.error); }
+  const { error } = await db.auth.signInWithPassword({ email: phoneEmail(phone), password: pw });
+  busy('xBtn',false,'تغيير كلمة المرور');
+  if(error){ setTab('login'); return err('تم تغيير كلمة المرور ✅ سجّل الدخول'); }
 }
 
 const WORKSPACE = { admin:['admin.html','⚙️','لوحة التحكم'], staff:['admin.html','⚙️','لوحة التحكم'],
