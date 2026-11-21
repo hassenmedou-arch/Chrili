@@ -289,6 +289,8 @@ body.has-bar .wrap{padding-bottom:90px}
       <button class="back" onclick="go('home')">→ رجوع</button>
       <h2 class="section-t">طلباتي</h2>
       <div id="ordersBody"></div>
+      <h2 class="section-t" style="margin-top:26px">👤 حسابي</h2>
+      <div class="summary" style="margin-top:0" id="accountBox"></div>
     </section>
 
     <section id="vDone" class="hidden"><div class="done" id="doneBody"></div></section>
@@ -731,7 +733,38 @@ async function checkout(){
 
 /* ================== طلباتي ================== */
 const STATUS = { new:['جديد','#d9a441'], confirmed:['مؤكَّد','#1f4e79'], delivered:['تم التوصيل','#2E7D5B'], cancelled:['ملغى','#c0392b'] };
+function renderAccount(){
+  const b=document.getElementById('accountBox'); if(!b||!me) return;
+  b.innerHTML=`<div class="row" style="color:var(--ink)"><span>الاسم</span><b>${esc(me.name)}</b></div>
+    <div class="row" style="color:var(--ink)"><span>الهاتف</span><b dir="ltr">${esc(me.phone)}</b></div>
+    <div class="row"><a href="privacy.html" target="_blank" style="color:var(--brand)">🔒 سياسة الخصوصية</a></div>
+    <button onclick="deleteAccountSheet()" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1.5px solid #c0392b;color:#c0392b;font-weight:800">🗑️ حذف حسابي</button>`;
+}
+function deleteAccountSheet(){
+  sheetOpen(`<h3 style="color:#c0392b">🗑️ حذف الحساب نهائياً</h3>
+    <div style="line-height:1.9;font-size:14.5px;margin-bottom:12px">
+      • يُحذف حسابك واسمك ورقمك وكلمة المرور <b>نهائياً</b>، ولا يمكن استرجاعها.<br>
+      • طلباتك القديمة تبقى في سجلات المحاسبة <b>بدون اسمك ولا رقمك ولا عنوانك</b>.<br>
+      • إذا كان لديك طلب لم يُسلَّم بعد، انتظر التوصيل أولاً.</div>
+    <label style="font-weight:700">أدخل كلمة المرور للتأكيد</label>
+    <input class="field" id="delPw" type="password" autocomplete="current-password" style="margin:6px 0 12px">
+    <button id="delBtn" style="width:100%;padding:13px;border-radius:12px;background:#c0392b;color:#fff;font-weight:800">حذف حسابي نهائياً</button>
+    <button onclick="closeSheet()" style="width:100%;margin-top:8px;padding:12px;border-radius:12px;background:#f4f1ea;font-weight:700">إلغاء</button>`);
+  document.getElementById('delBtn').onclick=async()=>{
+    const pw=document.getElementById('delPw').value; if(!pw) return toast('أدخل كلمة المرور');
+    const b=document.getElementById('delBtn'); b.disabled=true; b.textContent='⏳ جارٍ الحذف...';
+    let msg='';
+    try{ const { data, error } = await db.functions.invoke('delete-account',{ body:{ password:pw, source:'app' } });
+      if(error){ try{ msg=(await error.context.json()).error; }catch(_){ msg='تعذّر الحذف، حاول مرة أخرى'; } }
+      else if(!data?.ok) msg=data?.error||'تعذّر الحذف';
+    }catch(e){ msg='تعذّر الاتصال، حاول مرة أخرى'; }
+    if(msg){ b.disabled=false; b.textContent='حذف حسابي نهائياً'; return toast(msg); }
+    closeSheet(); try{ localStorage.removeItem('chrili_cart_'+me.id); localStorage.removeItem('chrili_fav'); }catch(e){}
+    await db.auth.signOut().catch(()=>{}); toast('تم حذف حسابك نهائياً');
+  };
+}
 async function renderOrders(){
+  renderAccount();
   const el=document.getElementById('ordersBody');
   el.innerHTML=`<div class="empty">⏳ جارٍ التحميل...</div>`;
   const { data, error } = await db.from('orders')
