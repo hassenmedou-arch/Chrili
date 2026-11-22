@@ -330,7 +330,7 @@ async function renderStats(){
   const [u, o, p, c, er] = await Promise.all([
     me.role==='admin' ? db.from('profiles').select('id',{count:'exact',head:true}) : Promise.resolve({count:null}),
     db.from('orders').select('total,status,created_at'),
-    db.from('products').select('id,stock,active'),
+    fetchAll(()=>db.from('products').select('id,stock,active').order('id')),
     db.from('celebrities').select('id',{count:'exact',head:true}),
     me.role==='admin' ? db.from('app_errors').select('id',{count:'exact',head:true}).gte('created_at', new Date(Date.now()-7*864e5).toISOString()) : Promise.resolve({count:null})
   ]);
@@ -399,7 +399,7 @@ async function setStatus(id,s){
 async function loadCatalog(){
   const [c,p]=await Promise.all([
     db.from('celebrities').select('*').order('name'),
-    db.from('products').select('*').order('created_at',{ascending:false})
+    fetchAll(()=>db.from('products').select('*').order('created_at',{ascending:false}).order('id'))
   ]);
   if(c.error||p.error) throw (c.error||p.error);
   CELEBS=c.data; PRODUCTS=p.data;
@@ -488,9 +488,9 @@ let CAT={cats:[],prods:[],vars:[],offers:[]}, catQ='';
 async function loadCat(){
   const [a,b,c,d]=await Promise.all([
     db.from('categories').select('*').order('code'),
-    db.from('catalog_products').select('*').order('code'),
+    fetchAll(()=>db.from('catalog_products').select('*').order('code')),
     db.from('product_variants').select('*').order('code'),
-    db.from('offers').select('*').order('code')]);
+    fetchAll(()=>db.from('offers').select('*').order('code'))]);
   const e=a.error||b.error||c.error||d.error; if(e) throw e;
   CAT={cats:a.data,prods:b.data,vars:c.data,offers:d.data};
 }
@@ -719,7 +719,7 @@ function editCeleb(id){
 
 /* ================== المستخدمون ================== */
 async function renderUsers(){
-  const { data, error } = await db.from('profiles').select('id,full_name,phone,role,created_at,phone_verified,verify_code').order('created_at',{ascending:false});
+  const { data, error } = await fetchAll(()=>db.from('profiles').select('id,full_name,phone,role,created_at,phone_verified,verify_code').order('created_at',{ascending:false}).order('id'));
   if(error) return fail('تعذّر تحميل المستخدمين', error);
   const roleL={customer:'زبون',celebrity:'مشهور',staff:'موظف',admin:'مدير',merchant:'تاجر'}, roleC={customer:'#6b726f',celebrity:'#6b3fa0',staff:'#1f4e79',admin:'#0E4D3A',merchant:'#b7791f'};
   USERS=data;
@@ -1206,6 +1206,16 @@ async function shrinkImage(file, max){
   const cv=document.createElement('canvas'); cv.width=Math.round(img.naturalWidth*k); cv.height=Math.round(img.naturalHeight*k);
   const g=cv.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,cv.width,cv.height); g.drawImage(img,0,0,cv.width,cv.height);
   return await new Promise(ok=>cv.toBlob(ok,'image/jpeg',0.86));
+}
+/* تحميل على دفعات: الخادم يعيد 1000 صف كحدّ أقصى في الطلب الواحد */
+async function fetchAll(q){
+  const out=[]; const step=1000;
+  for(let from=0; from<100000; from+=step){
+    const { data, error } = await q().range(from, from+step-1);
+    if(error) return { data:null, error };
+    out.push(...(data||[])); if(!data||data.length<step) break;
+  }
+  return { data:out, error:null };
 }
 /* ===== توحيد خلفية الصور الحالية ===== */
 async function restudioAll(){

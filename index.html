@@ -551,10 +551,21 @@ function askLogout(){ modal('هل تريد تسجيل الخروج؟', async ()=
 
 /* ================== تحميل المشاهير والمنتجات ================== */
 let SHIP={fee:120, free:10000}, BANNERS=[], CATSEL=null;
+/* تحميل على دفعات: الخادم يعيد 1000 صف كحدّ أقصى في الطلب الواحد */
+async function fetchAll(table, cols, order){
+  const out=[]; const step=1000;
+  for(let from=0; from<50000; from+=step){
+    const { data, error } = await db.from(table).select(cols).order(order).order('id').range(from, from+step-1);
+    if(error) return { data:null, error };
+    out.push(...data); if(data.length<step) break;
+  }
+  return { data:out, error:null };
+}
+const PROD_COLS='id,celebrity_id,name,price,stock,image_url,brand,category,code,offer_id,created_at,active,review_status';
 async function loadCatalog(){
   const [c, p, st, bn] = await Promise.all([
-    db.from('celebrities').select('*').order('created_at'),
-    db.from('products').select('*').order('created_at'),
+    db.from('celebrities').select('id,name,bio,category,avatar_url,followers,active,code,created_at').order('created_at'),
+    fetchAll('products', PROD_COLS, 'created_at'),
     db.from('app_settings').select('key,value'),
     db.from('banners').select('*').eq('active',true).order('sort').order('created_at',{ascending:false})
   ]);
@@ -728,8 +739,10 @@ function refreshView(){
   else if(!document.getElementById('vCats').classList.contains('hidden')) renderCats();
 }
 function buyNow(id){ const p=P(id); if(!(cart[id]>0)){ if(p.stock<=0) return toast('نفدت الكمية'); cart[id]=1; saveCart(); } closeSheet(); go('cart'); }
-function openProd(id){
-  const p=P(id), c=C(p.celebrity_id), out=p.stock<=0; loadFav();
+async function openProd(id){
+  const p=P(id); if(!p) return;
+  if(p.description===undefined){ p.description=null; try{ const { data } = await db.from('products').select('description').eq('id',id).maybeSingle(); p.description=data?.description||null; }catch(e){} }
+  const c=C(p.celebrity_id), out=p.stock<=0; loadFav();
   sheetOpen(`<div class="pd">
     <div class="big">${p.image_url?`<img src="${esc(p.image_url)}" alt="">`:''}</div>
     <div class="br" style="font-weight:800;font-size:17px;margin-top:12px">${esc(p.brand||'')}</div>
