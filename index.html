@@ -140,6 +140,28 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 .pd .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .pd .meta span{background:#F4ECDB;border-radius:8px;padding:5px 9px;font-size:12.5px}
 
+/* ---------- شريط التنقّل السفلي + البانر ---------- */
+#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding:0 6px env(safe-area-inset-bottom)}
+#tabbar .in{display:flex;width:100%;max-width:560px}
+#tabbar button{flex:1;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 10px;font-size:11.5px;font-weight:500;color:var(--muted);position:relative}
+#tabbar button.on{color:var(--brand);font-weight:700}
+#tabbar button.on::before{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 3px 3px;background:var(--brand)}
+#tabbar svg{width:23px;height:23px}
+#tabbar .tb{position:absolute;top:4px;margin-right:-26px;min-width:16px;height:16px;border-radius:8px;background:var(--gold);color:var(--ink);font-size:10px;font-weight:800;display:grid;place-items:center;padding:0 4px}
+body.has-tabs .wrap{padding-bottom:96px}
+body.has-tabs #cartBar{bottom:62px}
+.banner{text-align:right;position:relative;overflow:hidden;border-radius:var(--r);background:var(--night);color:#fff;padding:20px;margin:4px 0 16px;display:flex;flex-direction:column;gap:8px;min-height:150px;background-size:cover;background-position:center}
+.banner::before{content:"";position:absolute;left:-40px;top:-40px;width:170px;height:170px;border-radius:50%;background:var(--gold);opacity:.25}
+.banner.img::before{display:none}
+.banner.img::after{content:"";position:absolute;inset:0;background:linear-gradient(270deg,rgba(20,24,22,.85),rgba(20,24,22,.25))}
+.banner>*{position:relative;z-index:1}
+.banner .tg{font-size:12px;font-weight:600;color:var(--gold)}
+.banner .tt{font-size:20px;font-weight:700;line-height:1.45;max-width:85%}
+.banner .bt{align-self:flex-start;margin-top:6px;height:38px;padding:0 18px;border-radius:999px;background:var(--gold);color:var(--ink);font-weight:700;font-size:13.5px}
+.catlist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.catlist button{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;text-align:start;display:flex;flex-direction:column;gap:4px}
+.catlist b{font-size:15px}.catlist span{font-size:12.5px;color:var(--muted)}
+
 /* ---------- قائمة المشاهير بشكل شبكة ---------- */
 .cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 12px}
 @media(min-width:700px){.cgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
@@ -262,8 +284,7 @@ body.has-bar .wrap{padding-bottom:90px}
     <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1>اشريلي</h1><small>CHRILI</small></div></div>
     <div class="spacer"></div>
     <button class="icon-btn hidden" id="wsBtn" aria-label="واجهتي"></button>
-    <button class="icon-btn" onclick="go('orders')" title="طلباتي">📦</button>
-    <button class="icon-btn" onclick="go('cart')" title="السلة">🛒<span class="badge" id="badge">0</span></button>
+    <span class="hidden" id="badge">0</span>
     <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
   </div></header>
 
@@ -272,6 +293,7 @@ body.has-bar .wrap{padding-bottom:90px}
       <h2 class="hello" id="hello"></h2>
       <p class="sub">اختر مشهورًا وتصفّح بضاعته</p>
       <div class="search">🔎<input id="q" placeholder="ابحث عن مشهور أو منتج..." oninput="renderHome()"></div>
+      <div id="bannerBox"></div>
       <div class="chips" id="chips"></div>
       <div id="homeBody"></div>
     </section>
@@ -295,8 +317,25 @@ body.has-bar .wrap{padding-bottom:90px}
       <div class="summary" style="margin-top:0" id="accountBox"></div>
     </section>
 
+    <section id="vCelebs" class="hidden">
+      <h2 class="section-t">كل المشاهير</h2>
+      <div id="celebsBody"></div>
+    </section>
+
+    <section id="vCats" class="hidden">
+      <h2 class="section-t" id="catsTitle">الأقسام</h2>
+      <div id="catsBody"></div>
+    </section>
+
     <section id="vDone" class="hidden"><div class="done" id="doneBody"></div></section>
   </main>
+  <nav id="tabbar" aria-label="التنقّل"><div class="in">
+    <button data-t="home" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7v9H4v-9Z"/></svg>الرئيسية</button>
+    <button data-t="celebs" onclick="go('celebs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 4 2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.3 7 19l1.2-5.6L4 9.6l5.6-.6L12 4Z"/></svg>المشاهير</button>
+    <button data-t="cats" onclick="CATSEL=null;go('cats')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>الأقسام</button>
+    <button data-t="cart" onclick="go('cart')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7Zm3 0a3 3 0 0 1 6 0"/></svg><span class="tb hidden" id="tbBadge">0</span>السلة</button>
+    <button data-t="orders" onclick="go('orders')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"/></svg>حسابي</button>
+  </div></nav>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -511,13 +550,15 @@ function onSignedOut(){
 function askLogout(){ modal('هل تريد تسجيل الخروج؟', async ()=>{ await db.auth.signOut(); }); }
 
 /* ================== تحميل المشاهير والمنتجات ================== */
-let SHIP={fee:120, free:10000};
+let SHIP={fee:120, free:10000}, BANNERS=[], CATSEL=null;
 async function loadCatalog(){
-  const [c, p, st] = await Promise.all([
+  const [c, p, st, bn] = await Promise.all([
     db.from('celebrities').select('*').order('created_at'),
     db.from('products').select('*').order('created_at'),
-    db.from('app_settings').select('key,value')
+    db.from('app_settings').select('key,value'),
+    db.from('banners').select('*').eq('active',true).order('sort').order('created_at',{ascending:false})
   ]);
+  BANNERS = bn && !bn.error ? (bn.data||[]) : [];
   (st.data||[]).forEach(r=>{ if(r.key==='shipping_fee') SHIP.fee=Number(r.value); if(r.key==='free_shipping_from') SHIP.free=Number(r.value); });
   if(c.error || p.error){
     reportError('loadCatalog: ' + (c.error||p.error).message);
@@ -533,7 +574,11 @@ async function loadCatalog(){
 
 /* ================== التنقل ================== */
 function go(v,arg){
-  ['Home','Store','Cart','Orders','Done'].forEach(x=>show('v'+x, x.toLowerCase()===v));
+  ['Home','Store','Cart','Orders','Done','Celebs','Cats'].forEach(x=>show('v'+x, x.toLowerCase()===v));
+  document.body.classList.add('has-tabs');
+  document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on', b.dataset.t===(v==='store'?'celebs':v==='done'?'orders':v)));
+  if(v==='celebs') renderCelebs();
+  if(v==='cats') renderCats();
   if(v==='home') renderHome();
   if(v==='store') renderStore(arg);
   if(v==='cart') renderCart();
@@ -542,7 +587,39 @@ function go(v,arg){
 }
 
 /* ================== الرئيسية ================== */
-function renderHome(){ loadFav();
+function renderBanner(){
+  const box=document.getElementById('bannerBox'); if(!box) return;
+  const b=BANNERS.find(x=>!x.celebrity_id||C(x.celebrity_id));
+  if(!b){ box.innerHTML=''; return; }
+  const tgt=b.celebrity_id?`go('store','${b.celebrity_id}')`:`go('celebs')`;
+  box.innerHTML=`<div class="banner ${b.image_url?'img':''}" ${b.image_url?`style="background-image:url('${esc(b.image_url)}')"`:''}>
+    ${b.tag?`<span class="tg">${esc(b.tag)}</span>`:''}<span class="tt">${esc(b.title)}</span>
+    <button class="bt" onclick="${tgt}">${esc(b.button_text||'تسوّق الآن')}</button></div>`;
+}
+const celebCard=c=>{ const n=PRODUCTS.filter(p=>p.celebrity_id===c.id).length; return `
+      <button class="cg" onclick="go('store','${c.id}')">
+        <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="" loading="lazy">`:`<span class="em">${emojiOf(c)}</span>`}<span class="vf">✔</span></div>
+        <div class="nm">${esc(c.name)}</div>
+        <div class="mt">${n} منتج${c.followers?' · '+esc(c.followers):''}</div>
+      </button>`; };
+function renderCelebs(){
+  document.getElementById('celebsBody').innerHTML = CELEBS.length?`<div class="cgrid">${CELEBS.map(celebCard).join('')}</div>`:`<div class="empty">لا يوجد مشاهير بعد</div>`;
+}
+function renderCats(){
+  loadFav();
+  const el=document.getElementById('catsBody'), t=document.getElementById('catsTitle');
+  if(CATSEL){
+    const ps=PRODUCTS.filter(p=>(p.category||'أخرى')===CATSEL);
+    t.innerHTML=`<button class="back" style="margin:0 0 6px" onclick="CATSEL=null;renderCats()">→ كل الأقسام</button><br>${esc(CATSEL)}`;
+    el.innerHTML=ps.length?`<div class="pgrid">${ps.map(prodCard).join('')}</div>`:`<div class="empty">لا توجد منتجات في هذا القسم</div>`;
+    return;
+  }
+  t.textContent='الأقسام';
+  const m={}; PRODUCTS.forEach(p=>{ const k=p.category||'أخرى'; m[k]=(m[k]||0)+1; });
+  const ks=Object.keys(m).sort((a,b)=>m[b]-m[a]);
+  el.innerHTML=ks.length?`<div class="catlist">${ks.map(k=>`<button onclick="CATSEL=${JSON.stringify(k).replace(/"/g,'&quot;')};renderCats();window.scrollTo(0,0)"><b>${esc(k)}</b><span>${m[k]} منتج</span></button>`).join('')}</div>`:`<div class="empty">لا توجد منتجات بعد</div>`;
+}
+function renderHome(){ loadFav(); renderBanner();
   document.getElementById('hello').textContent='مرحبًا '+me.name+' 👋';
   const cats=['الكل',...new Set(CELEBS.map(c=>c.category).filter(Boolean))];
   document.getElementById('chips').innerHTML=cats.map((c,i)=>`<button class="chip ${c===cat?'on':''}" data-i="${i}">${esc(c)}</button>`).join('');
@@ -552,12 +629,7 @@ function renderHome(){ loadFav();
   let html='';
   const list=CELEBS.filter(c=>(cat==='الكل'||c.category===cat)&&(!q||c.name.includes(q)||(c.category||'').includes(q)));
   if(list.length){
-    html+=`<h3 class="section-t">المشاهير</h3><div class="cgrid">`+list.map(c=>`
-      <button class="cg" onclick="go('store','${c.id}')">
-        <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="" loading="lazy">`:`<span class="em">${emojiOf(c)}</span>`}<span class="vf">✔</span></div>
-        <div class="nm">${esc(c.name)}</div>
-        <div class="mt">${count(c.id)} منتج${c.followers?' · '+esc(c.followers):''}</div>
-      </button>`).join('')+`</div>`;
+    html+=`<h3 class="section-t">المشاهير</h3><div class="cgrid">`+list.map(celebCard).join('')+`</div>`;
   }
   if(q){
     const prods=PRODUCTS.filter(p=>(p.name.includes(q)||(p.brand||'').includes(q)||(p.code||'').includes(q))&&(cat==='الكل'||C(p.celebrity_id)?.category===cat));
@@ -653,6 +725,7 @@ function cardQty(id,d){
 function refreshView(){
   if(!document.getElementById('vStore').classList.contains('hidden') && CUR) renderStore(CUR);
   else if(!document.getElementById('vHome').classList.contains('hidden')) renderHome();
+  else if(!document.getElementById('vCats').classList.contains('hidden')) renderCats();
 }
 function buyNow(id){ const p=P(id); if(!(cart[id]>0)){ if(p.stock<=0) return toast('نفدت الكمية'); cart[id]=1; saveCart(); } closeSheet(); go('cart'); }
 function openProd(id){
@@ -677,8 +750,9 @@ function openProd(id){
 /* ================== السلة ================== */
 function updBadge(){
   const n=Object.values(cart).reduce((a,b)=>a+b,0); document.getElementById('badge').textContent=n;
+  const tb=document.getElementById('tbBadge'); if(tb){ tb.textContent=n; tb.classList.toggle('hidden', !n); }
   let bar=document.getElementById('cartBar');
-  const onShop=['vHome','vStore'].some(v=>!document.getElementById(v).classList.contains('hidden'));
+  const onShop=['vHome','vStore','vCelebs','vCats'].some(v=>!document.getElementById(v).classList.contains('hidden'));
   if(!n || !onShop){ bar?.remove(); document.body.classList.remove('has-bar'); return; }
   const tot=Object.entries(cart).reduce((a,[id,q])=>a+(P(id)?P(id).price*q:0),0);
   if(!bar){ bar=document.createElement('div'); bar.id='cartBar'; document.body.appendChild(bar); }

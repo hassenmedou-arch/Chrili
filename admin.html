@@ -346,6 +346,7 @@ async function renderStats(){
     <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#0E4D3A':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
     <p class="sub">نظرة سريعة على تطبيقك</p>
     ${me.role==='admin'?'<div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="editShipping()">⚙️ الإعدادات (التوصيل وفتح الحسابات)</button></div>':''}
+    <div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="bannersSheet()">🖼️ بانر الرئيسية</button></div>
     <div class="stats">
       ${me.role==='admin'?`<div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
       <div class="stat"><div class="k">📦 كل الطلبات</div><div class="v">${orders.length}</div></div>
@@ -744,6 +745,47 @@ async function renderUsers(){
         <button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`}
     </div>`).join('')}</div>`;
 }
+/* ===== بانر الرئيسية ===== */
+async function bannersSheet(){
+  const [{ data, error }, cs] = await Promise.all([db.from('banners').select('*').order('sort').order('created_at',{ascending:false}), db.from('celebrities').select('id,name,code').order('created_at')]);
+  if(error) return toast('تعذّر التحميل: '+error.message);
+  window._CELS=cs.data||[];
+  sheet(`<h3>🖼️ بانر الرئيسية</h3><p class="hint">يظهر أول بانر مفعّل في أعلى الرئيسية عند الزبون. الضغط عليه يفتح واجهة المشهور المختار.</p>
+    ${(data||[]).map(b=>`<div class="card"><div class="hd"><span class="t">${esc(b.title)}</span>${b.active?'<span class="pill" style="background:#2E7D5B">ظاهر</span>':'<span class="pill" style="background:#999">مخفي</span>'}</div>
+      <div class="s">${esc(b.tag||'')} · ${esc((window._CELS.find(c=>c.id===b.celebrity_id)||{}).name||'كل المشاهير')}</div>
+      <div class="acts"><button class="sbtn" onclick='editBanner(${JSON.stringify(b.id)})'>✏️ تعديل</button>
+        <button class="sbtn" onclick='toggleBanner(${JSON.stringify(b.id)},${!b.active})'>${b.active?'🙈 إخفاء':'👁️ إظهار'}</button>
+        <button class="sbtn" style="color:var(--danger)" onclick='delBanner(${JSON.stringify(b.id)})'>🗑️ حذف</button></div></div>`).join('')||'<div class="empty">لا يوجد بانر</div>'}
+    <button class="btn" onclick="editBanner(null)">+ بانر جديد</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إغلاق</button>`);
+  window._BAN=data||[];
+}
+function editBanner(id){
+  const b=(window._BAN||[]).find(x=>x.id===id)||{tag:'هذا الأسبوع',button_text:'تسوّق الآن',active:true};
+  sheet(`<h3>${id?'تعديل البانر':'بانر جديد'}</h3>
+    <label>العنوان الصغير</label><input class="field" id="bTag" value="${esc(b.tag||'')}" maxlength="40" placeholder="مثلاً: هذا الأسبوع">
+    <label>النص الرئيسي</label><input class="field" id="bTitle" value="${esc(b.title||'')}" maxlength="90" placeholder="مثلاً: تشكيلة الملاحف الجديدة عند فاطمة">
+    <label>نص الزر</label><input class="field" id="bBtn" value="${esc(b.button_text||'')}" maxlength="30">
+    <label>عند الضغط يفتح</label><select id="bCeleb"><option value="">— صفحة كل المشاهير —</option>${(window._CELS||[]).map(c=>`<option value="${c.id}" ${c.id===b.celebrity_id?'selected':''}>${esc(c.code||'')} · ${esc(c.name)}</option>`).join('')}</select>
+    <label>صورة الخلفية (اختياري)</label><input class="field" id="bImg" type="file" accept="image/*">
+    ${b.image_url?`<label style="font-weight:400"><input type="checkbox" id="bNoImg" style="width:auto"> إزالة الصورة الحالية</label>`:''}
+    <button class="btn" id="saveBtn">حفظ</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="bannersSheet()">رجوع</button>`);
+  $('saveBtn').onclick=async()=>{
+    const row={ tag:$('bTag').value.trim()||null, title:$('bTitle').value.trim(), button_text:$('bBtn').value.trim()||'تسوّق الآن', celebrity_id:$('bCeleb').value||null };
+    if(row.title.length<2) return toast('اكتب النص الرئيسي');
+    busy(true);
+    try{
+      const f=$('bImg').files[0]; if(f){ row.image_url=await uploadImage(f, true); }
+      else if($('bNoImg')&&$('bNoImg').checked) row.image_url=null;
+      const { error } = id ? await db.from('banners').update(row).eq('id',id) : await db.from('banners').insert(row);
+      if(error) throw error;
+      toast('تم الحفظ ✅'); bannersSheet();
+    }catch(e){ busy(false); toast('تعذّر الحفظ: '+(e.message||e)); }
+  };
+}
+async function toggleBanner(id,on){ const { error }=await db.from('banners').update({active:on}).eq('id',id); if(error) return toast('تعذّر'); bannersSheet(); }
+async function delBanner(id){ if(window._delArm!==id){ window._delArm=id; return toast('اضغط «حذف» مرة ثانية للتأكيد'); } window._delArm=null; const { error }=await db.from('banners').delete().eq('id',id); if(error) return toast('تعذّر'); bannersSheet(); }
 async function confirmPhone(id){
   const { error } = await db.rpc('confirm_phone',{ p_user:id });
   if(error) return toast('تعذّر التأكيد: '+error.message);
