@@ -140,6 +140,14 @@ header.top{position:sticky;top:0;z-index:20;background:rgba(251,247,238,.92);bac
 .pd .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .pd .meta span{background:#F4ECDB;border-radius:8px;padding:5px 9px;font-size:12.5px}
 
+/* ---------- اللغة ---------- */
+.auth-card{position:relative}
+.langbtn{position:absolute;top:14px;left:14px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--brand)}
+[dir=ltr] .langbtn{left:auto;right:14px}
+[dir=ltr] .banner{text-align:left}
+[dir=ltr] .shead .shr{right:auto;left:22px}
+[dir=ltr] .back{direction:ltr}
+
 /* ---------- شريط التنقّل السفلي + البانر ---------- */
 #tabbar{position:fixed;left:0;right:0;bottom:0;z-index:45;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding:0 6px env(safe-area-inset-bottom)}
 #tabbar .in{display:flex;width:100%;max-width:560px}
@@ -226,7 +234,8 @@ body.has-bar .wrap{padding-bottom:90px}
 <!-- ===== شاشة الدخول ===== -->
 <section id="auth" class="hidden">
   <div class="auth-card">
-    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1>اشريلي</h1><small>CHRILI</small></div></div>
+    <button type="button" class="langbtn" onclick="toggleLang()" aria-label="Langue / اللغة"><span data-raw>🌐 Français</span></button>
+    <div class="logo"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1 data-raw>اشريلي</h1><small>CHRILI</small></div></div>
     <p class="tagline">تسوّق مباشرة من واجهات مشاهيرك المفضلين</p>
     <div class="tabs">
       <button id="tabLogin" class="on" onclick="setTab('login')">تسجيل الدخول</button>
@@ -281,10 +290,11 @@ body.has-bar .wrap{padding-bottom:90px}
 <!-- ===== التطبيق ===== -->
 <div id="app" class="hidden">
   <header class="top"><div class="top-in">
-    <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1>اشريلي</h1><small>CHRILI</small></div></div>
+    <div class="logo" onclick="go('home')" style="cursor:pointer"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1 data-raw>اشريلي</h1><small>CHRILI</small></div></div>
     <div class="spacer"></div>
     <button class="icon-btn hidden" id="wsBtn" aria-label="واجهتي"></button>
     <span class="hidden" id="badge">0</span>
+    <button class="icon-btn" onclick="toggleLang()" title="Langue / اللغة" style="font:700 13px Montserrat,sans-serif;width:auto;padding:0 10px"><span data-raw id="langLbl">FR</span></button>
     <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
   </div></header>
 
@@ -341,6 +351,7 @@ body.has-bar .wrap{padding-bottom:90px}
 <div class="toast" id="toast"></div>
 <div id="modalRoot"></div>
 
+<script src="i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================== الاتصال بقاعدة البيانات ================== */
@@ -882,6 +893,7 @@ function modal(msg,ok){
 }
 
 /* ================== بدء التشغيل ================== */
+if(window.CHRILI_LANG==='fr'){ const l=document.getElementById('langLbl'); if(l) l.textContent='ع'; document.querySelectorAll('.langbtn span').forEach(x=>x.textContent='🌐 العربية'); }
 loadAuthSettings();
 db.auth.onAuthStateChange((event, session)=>{
   if(session?.user){ if(!me || me.id!==session.user.id) setTimeout(()=>onSignedIn(session.user),0); }
