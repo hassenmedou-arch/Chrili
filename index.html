@@ -686,7 +686,7 @@ function renderStore(id){
     <div class="shead">
       <button class="shr" onclick="shareStore('${c.id}')" aria-label="مشاركة">⤴</button>
       <div><div class="nm">${esc(c.name)} <span class="verified">✔</span></div>
-        <div class="sub">${esc(c.bio||'')}<br>${c.followers?esc(c.followers)+' متابع · ':''}${all.length} منتج</div></div>
+        <div class="sub"><span data-raw>${esc(c.bio||'')}</span><br>${c.followers?esc(c.followers)+' متابع · ':''}${all.length} منتج</div></div>
       <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="">`:`<div style="font-size:70px;margin-bottom:20px">${emojiOf(c)}</div>`}</div>
     </div>
     <div class="sbar"><button onclick="sortSheet()">⇅ رتّب</button><button onclick="filterSheet()">⚲ تحديد البحث${active?'<span class="dot"></span>':''}</button></div>
