@@ -122,6 +122,8 @@ textarea.field{min-height:80px;resize:vertical}
 <div id="sheetRoot"></div>
 <div id="toast"></div>
 
+<script src="i18n-admin.js"></script>
+<script src="i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="studio.js"></script>
 <script src="dupcheck.js"></script>
@@ -390,5 +392,6 @@ async function startPreview(user){
 
 (async () => { const { data: { session } } = await db.auth.getSession(); if (!session) show('auth', true); })();
 </script>
+<button onclick="toggleLang()" id="langFab" style="position:fixed;bottom:14px;left:14px;z-index:9999;border:0;border-radius:20px;padding:8px 14px;background:#0F5C4D;color:#fff;font-weight:700;box-shadow:0 2px 8px #0003" data-raw>FR / ع</button>
 </body>
 </html>

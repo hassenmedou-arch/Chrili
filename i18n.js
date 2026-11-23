@@ -102,7 +102,13 @@
     'كلمة المرور غير صحيحة': 'Mot de passe incorrect', 'سجّل الدخول أولاً': 'Connectez-vous d’abord',
     'حسابات الإدارة والمشاهير والتجّار تُحذف عن طريق اشريلي — تواصل معنا': 'Les comptes admin, stars et marchands sont supprimés par Chrili — contactez-nous',
   };
+  if (window.CHRILI_FR_EXTRA) Object.assign(FR, window.CHRILI_FR_EXTRA);
   const PATTERNS = [
+    [/^مرحباً (.+?) 👋$/, 'Bonjour $1 👋'],
+    [/⏳ بانتظار تأكيد الرقم \((\d+)\)/g, '⏳ Numéros à confirmer ($1)'],
+    [/📂 الأقسام \((\d+) رئيسي · (\d+) فرعي\)/g, '📂 Rayons ($1 principaux · $2 sous-rayons)'],
+    [/(\d[\d\s,.]*) أوقية/g, '$1 MRU'],
+    [/(\d+) طلب/g, '$1 commande(s)'],
     [/^مرحبًا (.+?) 👋$/, 'Bonjour $1 👋'],
     [/^(\d[\d\s,.]*) منتج$/, '$1 produits'],
     [/(\d[\d\s,.]*) منتج/g, '$1 produits'],
@@ -112,6 +118,9 @@
     [/لديك (\d+) طلب لم يُسلَّم بعد\. انتظر التوصيل أو ألغِ الطلب، ثم احذف الحساب\./, 'Vous avez $1 commande(s) non livrée(s). Attendez la livraison, puis supprimez le compte.'],
     [/الرمز غير صحيح \(بقي (\d+) محاولات\)/, 'Code incorrect ($1 essais restants)'],
     [/التوصيل (\d[\d\s]*) أوقية/g, 'Livraison $1 MRU'],
+    [/(\d[\d\s,.]*) أوقية/g, '$1 MRU'],
+    [/^مرحبًا (.+)$/, 'Bonjour $1'],
+    [/^مرحباً (.+?) 👋$/, 'Bonjour $1 👋'],
   ];
   const KEYS = Object.keys(FR).filter(k => k.length >= 4).sort((a, b) => b.length - a.length);
   const SKIP = '.nm,.br,.tt,.desc,[data-raw],script,style,textarea,input';
