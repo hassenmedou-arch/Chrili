@@ -225,16 +225,101 @@ body.has-bar .wrap{padding-bottom:90px}
 
 .add:disabled{cursor:not-allowed}
 .btn:disabled{opacity:.7}
+
+/* ===== Unslop polish — direction: warm, confident, local (Nouakchott market & melhfa) =====
+   Based on unslop by Damir Sokolovsky (@heydamir), CC BY 4.0 */
+:root{--bg:#F7F3EA;--line:rgba(28,36,33,.09);--muted:#5E6A64;--faint:#8B938E;--r:16px;--shadow:0 1px 2px rgba(20,30,25,.06),0 4px 12px rgba(20,30,25,.05);--ease:cubic-bezier(.2,.7,.2,1)}
+body{line-height:1.6}
+h1,h2,h3,h4,.hello,.section-t,.sh h3{line-height:1.4}
+.ic{flex-shrink:0;vertical-align:middle}
+/* weights: 400/500, 600 for emphasis only */
+.hello,.section-t,.banner h2,.celeb h3,.price,.pc .br,.pc .pr,.row.total,.sh h3,.opt.on,.step span,.step button,.badge,#tabbar .tb,#cartBar button,.pc .out,.letter{font-weight:600}
+.tabs button,label,.btn,.chip,.back,.add,.pc .buy,.pc .add2,.sbar button,.banner .bt,.modal p,.modal .row2 button,.qty button,.qty span,.rm,.toast,.cg .nm,.pc .exc,.celeb .open{font-weight:500}
+#tabbar button.on{font-weight:500}
+/* auth: one calm surface, no washes */
+#auth{background:var(--brand2)}
+.auth-card{border-radius:20px;box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.logo small{letter-spacing:2px}.top .logo small{letter-spacing:2px}
+/* spacing on the 4px grid */
+.hello{margin:24px 0 4px;font-size:22px}
+.sub{margin-bottom:16px;font-size:15px}
+.search{gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 12px;margin-bottom:16px;color:var(--faint)}
+.search input{padding:12px 0;color:var(--ink)}
+.chips{gap:8px;padding-bottom:4px;margin-bottom:16px}
+.chip{padding:8px 16px;border-radius:18px;border-color:var(--line);font-size:14px}
+.section-t{font-size:18px;margin:8px 0 12px}
+.icon-btn{width:40px;height:40px;border-radius:12px;border-color:var(--line);color:var(--ink)}
+.field{padding:12px;border:1px solid rgba(28,36,33,.16);border-radius:12px}
+.btn{padding:12px;border-radius:12px;font-size:16px;margin-top:20px}
+.btn:active,.pc .buy:active,.pc .add2:active,.banner .bt:active{transform:scale(.98)}
+.btn,.chip,.pc .buy,.pc .add2,.heart,.icon-btn,.opt{transition:background-color .15s var(--ease),color .15s var(--ease),border-color .15s var(--ease),transform .1s var(--ease)}
+/* banner: no blob; the moment is the image */
+.banner::before{display:none}
+.banner{border-radius:var(--r);padding:20px;gap:8px;margin:4px 0 16px;box-shadow:none}
+.banner .tg{font-size:13px;font-weight:500}
+.banner .tt{font-size:20px;font-weight:600;line-height:1.4}
+.banner .bt{height:40px;padding:0 20px;border-radius:12px}
+/* celebrity grid: flat tile, brand check */
+.cgrid{gap:20px 12px}
+.cg .ph{border-radius:var(--r);background:var(--tile)}
+.cg .ph .vf{top:8px;left:8px;width:20px;height:20px;color:#fff;background:var(--brand);box-shadow:none}
+.cg .nm{font-size:14px;margin-top:8px}
+.cg .mt{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.celeb{transition:none}.celeb:hover{transform:none}
+.verified{color:var(--brand)}
+/* storefront header: the moment + melhfa signature stripe */
+.shead::before{display:none}
+.shead{border-radius:var(--r);padding:0 24px;margin-bottom:16px;padding-bottom:12px}
+.shead::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:
+  repeating-linear-gradient(90deg,var(--gold) 0 12px,transparent 12px 16px,#2E7D6B 16px 20px,transparent 20px 24px);opacity:.9}
+.shead .nm{font-size:24px;font-weight:600}
+.shead .ph img{border-radius:20px;border:0;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.shead .shr{bottom:20px;right:24px;border-radius:12px}
+[dir=ltr] .shead .shr{right:auto;left:24px}
+/* product grid */
+.sbar{border-color:var(--line);border-radius:12px}
+.sbar button{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--ink);font-size:14px}
+.sbar button+button{border-right:1px solid var(--line)}
+[dir=ltr] .sbar button+button{border-right:0;border-left:1px solid var(--line)}
+.pgrid{gap:20px 12px}
+.pc .im{border-radius:var(--r)}
+.pc .code{bottom:8px;left:8px;padding:4px 8px;border-radius:6px;color:var(--muted);font-weight:500}
+.pc .exc{bottom:8px;right:8px;padding:4px 8px;font-weight:500}
+.pc .br{font-size:14px;margin-top:12px;color:var(--muted)}
+.pc .nm{color:var(--ink);margin-top:4px;min-height:44px}
+.pc .pr{font-size:16px;margin:8px 0;font-variant-numeric:tabular-nums}
+.pc .buy,.pc .add2{border-radius:12px;height:44px;padding:0 8px}
+.heart{border-color:var(--line);color:var(--muted);display:grid;place-items:center}
+.heart.on{color:#B0413E;border-color:rgba(176,65,62,.25);background:#FBF1EF}
+.step{border-width:1px}
+.step button{font-size:18px}
+.pd .meta span{border-radius:8px;padding:4px 8px}
+.fchips button{border-color:var(--line);padding:8px 12px}
+.opt{border-bottom-color:var(--line)}
+/* sheets, cart, summary: one shadow */
+.sh{padding:20px 16px 28px;border-radius:20px 20px 0 0}
+.cart-item{border-radius:var(--r);padding:12px;box-shadow:var(--shadow);gap:12px}
+.summary{border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
+.row.total{font-size:18px;font-variant-numeric:tabular-nums}
+#cartBar{background:linear-gradient(0deg,var(--bg) 70%,rgba(247,243,234,0))}
+#cartBar button{border-radius:12px;padding:12px 16px;font-size:15px;box-shadow:0 4px 16px rgba(15,92,77,.25)}
+#tabbar{border-top-color:var(--line)}
+#tabbar svg{width:22px;height:22px}
+.emi{color:var(--faint);display:grid;place-items:center;margin-bottom:8px}
+.done .big{display:grid;place-items:center}
+.done h2{font-weight:600}
+.toast{border-radius:12px;font-weight:500}
+.modal{border-radius:20px;padding:24px}
 </style>
 </head>
 <body>
 <!-- ===== شاشة التحميل ===== -->
-<div id="loading" style="min-height:100vh;display:grid;place-items:center;background:var(--brand);color:#fff;font-size:20px;font-weight:700">⏳ جارٍ التحميل...</div>
+<div id="loading" style="min-height:100vh;display:grid;place-items:center;background:var(--brand);color:#fff;font-size:20px;font-weight:700">جارٍ التحميل</div>
 
 <!-- ===== شاشة الدخول ===== -->
 <section id="auth" class="hidden">
   <div class="auth-card">
-    <button type="button" class="langbtn" onclick="toggleLang()" aria-label="Langue / اللغة"><span data-raw>🌐 Français</span></button>
+    <button type="button" class="langbtn" onclick="toggleLang()" aria-label="Langue / اللغة"><span data-raw>Français</span></button>
     <div class="logo"><div class="logo-mark"><svg viewBox="0 0 200 200" width="86%" height="86%" aria-hidden="true"><path d="M150 56 A64 64 0 1 0 150 144" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round"/><g transform="translate(50 50) scale(0.54)"><path d="M154 92 V108 C154 118 148 124 139 124 C130 124 125 118 125 108 V98 M125 108 C125 118 119 124 110 124 C101 124 96 118 96 108 V98 M96 108 C96 146 78 164 58 164 C40 164 30 152 30 134" fill="none" stroke="#D9A93F" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><path d="M125 29 l6.1 8.8 8.8 6.1 -8.8 6.1 -6.1 8.8 -6.1 -8.8 -8.8 -6.1 8.8 -6.1z" fill="#D9A93F"/><path d="M101 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/><path d="M149 58.5 l4.7 6.8 6.8 4.7 -6.8 4.7 -4.7 6.8 -4.7 -6.8 -6.8 -4.7 6.8 -4.7z" fill="#D9A93F"/></g></svg></div><div><h1 data-raw>اشريلي</h1><small>CHRILI</small></div></div>
     <p class="tagline">تسوّق مباشرة من واجهات مشاهيرك المفضلين</p>
     <div class="tabs">
@@ -295,14 +380,14 @@ body.has-bar .wrap{padding-bottom:90px}
     <button class="icon-btn hidden" id="wsBtn" aria-label="واجهتي"></button>
     <span class="hidden" id="badge">0</span>
     <button class="icon-btn" onclick="toggleLang()" title="Langue / اللغة" style="font:700 13px Montserrat,sans-serif;width:auto;padding:0 10px"><span data-raw id="langLbl">FR</span></button>
-    <button class="icon-btn" onclick="askLogout()" title="خروج">⎋</button>
+    <button class="icon-btn" onclick="askLogout()" title="خروج" aria-label="خروج"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/></svg></button>
   </div></header>
 
   <main class="wrap">
     <section id="vHome">
       <h2 class="hello" id="hello"></h2>
-      <p class="sub">اختر مشهورًا وتصفّح بضاعته</p>
-      <div class="search">🔎<input id="q" placeholder="ابحث عن مشهور أو منتج..." oninput="renderHome()"></div>
+      <p class="sub">ما يختاره مشهورك، يصلك إلى البيت</p>
+      <div class="search"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="ابحث عن مشهور أو منتج" oninput="renderHome()"></div>
       <div id="bannerBox"></div>
       <div class="chips" id="chips"></div>
       <div id="homeBody"></div>
@@ -323,7 +408,7 @@ body.has-bar .wrap{padding-bottom:90px}
       <button class="back" onclick="go('home')">→ رجوع</button>
       <h2 class="section-t">طلباتي</h2>
       <div id="ordersBody"></div>
-      <h2 class="section-t" style="margin-top:26px">👤 حسابي</h2>
+      <h2 class="section-t" style="margin-top:28px">حسابي</h2>
       <div class="summary" style="margin-top:0" id="accountBox"></div>
     </section>
 
@@ -389,10 +474,11 @@ let cart = {};            // { product_id: qty }
 let cat = 'الكل';
 
 const PALETTE = [['#8e2d5a','#c2547f'],['#1f4e79','#3b82c4'],['#a4511b','#e08a3c'],['#6b3fa0','#a274d6'],['#0E4D3A','#2fa184'],['#7a6420','#d9a441']];
+const heartSvg = on => '<svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="FILL" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>'.replace('FILL', on?'currentColor':'none');
 const CAT_EMOJI = {'ملابس تقليدية':'👗','إلكترونيات':'📱','مأكولات':'🍽️','تجميل وعطور':'💄','رياضة':'⚽','إكسسوارات':'✨'};
 const hash = s => [...String(s)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
 const colorOf = c => PALETTE[hash(c.id)%PALETTE.length];
-const emojiOf = c => CAT_EMOJI[c.category] || '🛍️';
+const emojiOf = c => '<svg width="40%" height="40%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="color:#B8AE9A" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
 const P = id => PRODUCTS.find(p=>p.id===id);
 const C = id => CELEBS.find(c=>c.id===id);
 const fmt = n => Number(n).toLocaleString('fr-FR') + ' أوقية';
@@ -620,7 +706,7 @@ function renderBanner(){
 }
 const celebCard=c=>{ const n=PRODUCTS.filter(p=>p.celebrity_id===c.id).length; return `
       <button class="cg" onclick="go('store','${c.id}')">
-        <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="" loading="lazy">`:`<span class="em">${emojiOf(c)}</span>`}<span class="vf">✔</span></div>
+        <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="" loading="lazy">`:`<span class="em">${emojiOf(c)}</span>`}<span class="vf"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg></span></div>
         <div class="nm">${esc(c.name)}</div>
         <div class="mt">${n} منتج${c.followers?' · '+esc(c.followers):''}</div>
       </button>`; };
@@ -642,7 +728,7 @@ function renderCats(){
   el.innerHTML=ks.length?`<div class="catlist">${ks.map(k=>`<button onclick="CATSEL=${JSON.stringify(k).replace(/"/g,'&quot;')};renderCats();window.scrollTo(0,0)"><b>${esc(k)}</b><span>${m[k]} منتج</span></button>`).join('')}</div>`:`<div class="empty">لا توجد منتجات بعد</div>`;
 }
 function renderHome(){ loadFav(); renderBanner();
-  document.getElementById('hello').textContent='مرحبًا '+me.name+' 👋';
+  document.getElementById('hello').textContent='واجهات المشاهير';
   const cats=['الكل',...new Set(CELEBS.map(c=>c.category).filter(Boolean))];
   document.getElementById('chips').innerHTML=cats.map((c,i)=>`<button class="chip ${c===cat?'on':''}" data-i="${i}">${esc(c)}</button>`).join('');
   document.querySelectorAll('#chips .chip').forEach(b=>b.onclick=()=>{ cat=cats[+b.dataset.i]; renderHome(); });
@@ -666,7 +752,7 @@ function avatar(c){ return c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="
 let SORT='new', FLT={brand:null,cat:null,fav:false,stock:false}, CUR=null;
 let FAV={}; function loadFav(){ try{ FAV=JSON.parse(localStorage.getItem('chrili_fav'))||{}; }catch(e){ FAV={}; } }
 function toggleFav(id,btn){ FAV[id]?delete FAV[id]:FAV[id]=1; try{localStorage.setItem('chrili_fav',JSON.stringify(FAV));}catch(e){}
-  if(btn){ btn.classList.toggle('on',!!FAV[id]); btn.textContent=FAV[id]?'♥':'♡'; } }
+  if(btn){ btn.classList.toggle('on',!!FAV[id]); btn.innerHTML=heartSvg(FAV[id]); } }
 const shortCode=p=>{ const m=(p.code||'').match(/P0*(\d+)/); return m?m[1]:''; };
 const isExclusive=p=>p.offer_id && PRODUCTS.filter(x=>x.offer_id===p.offer_id).length===1;
 function renderStore(id){
@@ -689,7 +775,7 @@ function renderStore(id){
         <div class="sub"><span data-raw>${esc(c.bio||'')}</span><br>${c.followers?esc(c.followers)+' متابع · ':''}${all.length} منتج</div></div>
       <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="">`:`<div style="font-size:70px;margin-bottom:20px">${emojiOf(c)}</div>`}</div>
     </div>
-    <div class="sbar"><button onclick="sortSheet()">⇅ رتّب</button><button onclick="filterSheet()">⚲ تحديد البحث${active?'<span class="dot"></span>':''}</button></div>
+    <div class="sbar"><button onclick="sortSheet()"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4v16M4 8l4-4 4 4M16 20V4M12 16l4 4 4-4"/></svg> رتّب</button><button onclick="filterSheet()"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg> تصفية${active?'<span class="dot"></span>':''}</button></div>
     ${prods.length?`<div class="pgrid">${prods.map(prodCard).join('')}</div>`:`<div class="empty">${all.length?'لا توجد نتائج لهذا الاختيار':'لا توجد منتجات بعد'}</div>`}`;
 }
 function shareStore(id){
@@ -711,7 +797,7 @@ function filterSheet(){
   sheetOpen(`<h3>تحديد البحث</h3>
     ${brands.length?`<div style="font-weight:700">الماركة</div><div class="fchips">${brands.map(b=>chip('brand',b,b)).join('')}</div>`:''}
     ${cats.length>1?`<div style="font-weight:700">القسم</div><div class="fchips">${cats.map(b=>chip('cat',b,b)).join('')}</div>`:''}
-    <div class="fchips"><button class="${FLT.fav?'on':''}" onclick="FLT.fav=!FLT.fav;filterSheet()">♥ المفضّلة فقط</button>
+    <div class="fchips"><button class="${FLT.fav?'on':''}" onclick="FLT.fav=!FLT.fav;filterSheet()">المفضّلة فقط</button>
       <button class="${FLT.stock?'on':''}" onclick="FLT.stock=!FLT.stock;filterSheet()">✓ المتوفّر فقط</button></div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="buy" style="flex:1;background:var(--brand);color:#fff;border-radius:10px;padding:12px;font-weight:800" onclick="closeSheet();renderStore(CUR)">عرض النتائج</button>
@@ -731,7 +817,7 @@ function prodCard(p){
     <div class="br">${esc(p.brand||c.name)}</div>
     <div class="nm" onclick="openProd('${p.id}')">${esc(p.name)}</div>
     <div class="pr">${Number(p.price).toLocaleString('fr-FR')} <small>MRU</small></div>
-    <div class="row"><button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this)" aria-label="المفضّلة">${FAV[p.id]?'♥':'♡'}</button>
+    <div class="row"><button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this)" aria-label="المفضّلة">${heartSvg(FAV[p.id])}</button>
       ${out?'<button class="add2" disabled>غير متوفّر</button>'
         : cart[p.id]?`<div class="step"><button onclick="cardQty('${p.id}',1)" aria-label="زيادة">+</button><span>${cart[p.id]}</span><button onclick="cardQty('${p.id}',-1)" aria-label="إنقاص">−</button></div>`
         : `<button class="add2" onclick="cardQty('${p.id}',1)">+ أضف إلى السلة</button>`}</div>
@@ -765,7 +851,7 @@ async function openProd(id){
     <div style="font-size:12.5px;color:var(--muted)">التوصيل ${SHIP.fee} أوقية${SHIP.free?' · مجاني فوق '+Number(SHIP.free).toLocaleString('fr-FR'):''}</div>
     ${p.description?`<div class="desc">${esc(p.description)}</div>`:''}
     <div class="row" style="display:flex;gap:8px;margin-top:16px">
-      <button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this);if(CUR)renderStore(CUR)">${FAV[p.id]?'♥':'♡'}</button>
+      <button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this);if(CUR)renderStore(CUR)">${heartSvg(FAV[p.id])}</button>
       <button class="buy" style="flex:1;background:#fff;color:var(--brand);border:1.5px solid var(--brand);border-radius:12px;padding:12px;font-weight:700" ${out?'disabled':''} onclick="addToCart('${p.id}',this);refreshView()">+ السلة</button>
       <button class="buy" style="flex:1.4;background:var(--brand);color:#fff;border-radius:12px;padding:12px;font-weight:800" ${out?'disabled':''} onclick="buyNow('${p.id}')">اشترِ الآن</button></div>
   </div>`);
@@ -781,7 +867,7 @@ function updBadge(){
   const tot=Object.entries(cart).reduce((a,[id,q])=>a+(P(id)?P(id).price*q:0),0);
   if(!bar){ bar=document.createElement('div'); bar.id='cartBar'; document.body.appendChild(bar); }
   document.body.classList.add('has-bar');
-  bar.innerHTML=`<button onclick="go('cart')"><span><span class="n">${n}</span> في السلة · ${Number(tot).toLocaleString('fr-FR')} MRU</span><span>إتمام الطلب ←</span></button>`;
+  bar.innerHTML=`<button onclick="go('cart')"><span><span class="n">${n}</span> في السلة · ${Number(tot).toLocaleString('fr-FR')} MRU</span><span>إتمام الطلب</span></button>`;
 }
 function addToCart(id,btn){
   const p=P(id); if((cart[id]||0)>=p.stock) return toast('لا توجد كمية إضافية من هذا المنتج');
@@ -797,7 +883,7 @@ function setQty(id,d){
 }
 function renderCart(){
   const ids=Object.keys(cart).filter(id=>P(id)), el=document.getElementById('cartBody');
-  if(!ids.length){ el.innerHTML=`<div class="empty"><div style="font-size:54px">🛒</div><p style="margin:10px 0 16px">سلتك فارغة</p><button class="btn" style="max-width:260px" onclick="go('home')">تصفّح المشاهير</button></div>`; return; }
+  if(!ids.length){ el.innerHTML=`<div class="empty"><div class="emi"><svg class="ic" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><p style="margin:10px 0 16px">سلتك فارغة</p><button class="btn" style="max-width:260px" onclick="go('home')">تصفّح المشاهير</button></div>`; return; }
   let sub=0;
   const rows=ids.map(id=>{ const p=P(id),c=C(p.celebrity_id),line=p.price*cart[id]; sub+=line; const col=colorOf(c); return `
     <div class="cart-item">
@@ -809,7 +895,7 @@ function renderCart(){
   const ship=sub>=SHIP.free?0:SHIP.fee;
   el.innerHTML=rows+`<button class="back" style="margin:4px 0 12px" onclick="go(CUR?'store':'home',CUR)">＋ أضف منتجات أخرى</button><div class="summary">
     <div class="row"><span>المجموع الفرعي</span><span>${fmt(sub)}</span></div>
-    <div class="row"><span>التوصيل</span><span>${ship?fmt(ship):'مجاني 🎉'}</span></div>
+    <div class="row"><span>التوصيل</span><span>${ship?fmt(ship):'مجاني'}</span></div>
     <div class="row total"><span>الإجمالي</span><span>${fmt(sub+ship)}</span></div>
     <label>عنوان التوصيل</label>
     <input class="field" id="addr" placeholder="الحي، الشارع، علامة قريبة...">
@@ -825,7 +911,7 @@ async function checkout(){
   if(error){ reportError('checkout: '+error.message); busy('coBtn',false,'تأكيد الطلب'); return toast('تعذّر تسجيل الطلب: '+error.message); }
   const { data: order } = await db.from('orders').select('total').eq('id',orderId).single();
   cart={}; saveCart();
-  document.getElementById('doneBody').innerHTML=`<div class="big">✅</div><h2>تم استلام طلبك!</h2>
+  document.getElementById('doneBody').innerHTML=`<div class="big"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></div><h2>تم استلام طلبك</h2>
     <p>رقم الطلب: <b>${orderId.slice(0,8).toUpperCase()}</b><br>${order?'المبلغ: <b>'+fmt(order.total)+'</b><br>':''}سنتصل بك على الرقم ${esc(me.phone)} لتأكيد التوصيل.</p>
     <button class="btn" onclick="go('orders')">عرض طلباتي</button>`;
   go('done');
@@ -837,11 +923,11 @@ function renderAccount(){
   const b=document.getElementById('accountBox'); if(!b||!me) return;
   b.innerHTML=`<div class="row" style="color:var(--ink)"><span>الاسم</span><b>${esc(me.name)}</b></div>
     <div class="row" style="color:var(--ink)"><span>الهاتف</span><b dir="ltr">${esc(me.phone)}</b></div>
-    <div class="row"><a href="privacy.html" target="_blank" style="color:var(--brand)">🔒 سياسة الخصوصية</a></div>
-    <button onclick="deleteAccountSheet()" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1.5px solid #c0392b;color:#c0392b;font-weight:800">🗑️ حذف حسابي</button>`;
+    <div class="row"><a href="privacy.html" target="_blank" style="color:var(--brand)">سياسة الخصوصية</a></div>
+    <button onclick="deleteAccountSheet()" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1.5px solid #c0392b;color:#c0392b;font-weight:600">حذف حسابي</button>`;
 }
 function deleteAccountSheet(){
-  sheetOpen(`<h3 style="color:#c0392b">🗑️ حذف الحساب نهائياً</h3>
+  sheetOpen(`<h3 style="color:#c0392b">حذف الحساب نهائياً</h3>
     <div style="line-height:1.9;font-size:14.5px;margin-bottom:12px">
       • يُحذف حسابك واسمك ورقمك وكلمة المرور <b>نهائياً</b>، ولا يمكن استرجاعها.<br>
       • طلباتك القديمة تبقى في سجلات المحاسبة <b>بدون اسمك ولا رقمك ولا عنوانك</b>.<br>
@@ -871,7 +957,7 @@ async function renderOrders(){
     .select('id,total,status,created_at,address,order_items(qty,unit_price,products(name))')
     .order('created_at',{ascending:false});
   if(error){ reportError('orders: '+error.message); el.innerHTML=`<div class="empty">تعذّر تحميل الطلبات</div>`; return; }
-  if(!data.length){ el.innerHTML=`<div class="empty"><div style="font-size:54px">📦</div><p>لا توجد طلبات بعد</p></div>`; return; }
+  if(!data.length){ el.innerHTML=`<div class="empty"><div class="emi"><svg class="ic" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div><p>لا توجد طلبات بعد</p></div>`; return; }
   el.innerHTML=data.map(o=>{ const s=STATUS[o.status]||[o.status,'#666']; return `
     <div class="summary" style="margin-top:0;margin-bottom:12px">
       <div class="row" style="color:var(--ink);font-weight:800"><span>طلب ${o.id.slice(0,8).toUpperCase()}</span>

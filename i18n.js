@@ -102,6 +102,7 @@
     'كلمة المرور غير صحيحة': 'Mot de passe incorrect', 'سجّل الدخول أولاً': 'Connectez-vous d’abord',
     'حسابات الإدارة والمشاهير والتجّار تُحذف عن طريق اشريلي — تواصل معنا': 'Les comptes admin, stars et marchands sont supprimés par Chrili — contactez-nous',
   };
+  Object.assign(FR, {"واجهات المشاهير": "Vitrines des stars", "ما يختاره مشهورك، يصلك إلى البيت": "Ce que votre star choisit, livré chez vous", "تصفية": "Filtrer", "المفضّلة فقط": "Favoris uniquement", "حذف حسابي": "Supprimer mon compte", "حذف الحساب نهائياً": "Supprimer le compte définitivement", "تم استلام طلبك": "Commande reçue", "مجاني": "Gratuite", "إتمام الطلب": "Commander", "جارٍ التحميل": "Chargement", "ابحث عن مشهور أو منتج": "Rechercher une star ou un produit", "رتّب": "Trier"});
   if (window.CHRILI_FR_EXTRA) Object.assign(FR, window.CHRILI_FR_EXTRA);
   const PATTERNS = [
     [/^مرحباً (.+?) 👋$/, 'Bonjour $1 👋'],
