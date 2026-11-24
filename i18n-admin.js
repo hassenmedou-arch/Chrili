@@ -1,5 +1,7 @@
 /* Chrili — traductions du tableau de bord et de l’espace influenceur */
 window.CHRILI_FR_EXTRA = {
+"منتجاتي": "Mes produits",
+"مبيعاتي": "Mes ventes",
 "،": ",",
 "من": "de",
 "حفظ": "Enregistrer",
