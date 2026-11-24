@@ -122,7 +122,7 @@ label{font-weight:500}
   </div>
 </section>
 
-<section id="denied" class="hidden"><div class="wrap"><div class="empty">⛔ هذا الحساب ليس حساب تاجر أو مشهور.<br><br><button class="ibtn" onclick="logout()">تسجيل الخروج</button></div></div></section>
+<section id="denied" class="hidden"><div class="wrap"><div class="empty">هذا الحساب ليس حساب تاجر أو مشهور.<br><br><button class="ibtn" onclick="logout()">تسجيل الخروج</button></div></div></section>
 
 <section id="app" class="hidden">
   <header><div class="top">
@@ -145,7 +145,7 @@ label{font-weight:500}
     <div class="sub" id="lastUpd"></div>
     <nav class="tabs" id="tabs"></nav>
     <div id="list"></div>
-    <div class="note">📌 عند وصول طلب جديد: اضغط <b>«بدأت التجهيز»</b>، ثم <b>«جاهز للاستلام»</b> عندما يصبح جاهزاً. فريق اشريلي يرى ذلك مباشرة ويأتي لاستلامه.<br>🔔 اترك هذه الصفحة مفتوحة لتسمع تنبيهاً عند كل طلب جديد.</div>
+    <div class="note">عند وصول طلب جديد: اضغط <b>«بدأت التجهيز»</b>، ثم <b>«جاهز للاستلام»</b> عندما يصبح جاهزاً. فريق اشريلي يرى ذلك مباشرة ويأتي لاستلامه.<br>اترك هذه الصفحة مفتوحة لتسمع تنبيهاً عند كل طلب جديد.</div>
     </div>
   </div>
 </section>
@@ -180,7 +180,7 @@ $('loginForm').onsubmit = async (e) => {
   const phone = $('lPhone').value.trim(), pw = $('lPw').value;
   $('lErr').textContent = '';
   if (!/^\d{8}$/.test(phone)) return $('lErr').textContent = 'رقم الهاتف يجب أن يكون 8 أرقام';
-  $('lBtn').disabled = true; $('lBtn').textContent = '⏳';
+  $('lBtn').disabled = true; $('lBtn').textContent = '...';
   const { error } = await db.auth.signInWithPassword({ email: phone + '@chrili.app', password: pw });
   $('lBtn').disabled = false; $('lBtn').textContent = 'دخول';
   if (error) $('lErr').textContent = 'الرقم أو كلمة المرور غير صحيحة';
@@ -198,7 +198,7 @@ async function onSignedIn(user){
   const r = await db.rpc('my_celebrity_id'); celebId = r.data || null;
   if (!celebId || (m && !m.active)) { show('denied', true); return; }
   me = { id: user.id, name: (m && m.name) || p.full_name || '' };
-  $('hello').textContent = 'مرحباً ' + me.name + ' 👋';
+  $('hello').textContent = me.name;
   $('portalTitle').textContent = 'واجهتي';
   show('views', true);
   show('app', true); setView('products');
@@ -240,27 +240,27 @@ function render(){
   $('list').innerHTML = orders.map(o => {
     const closed = ['cancelled','delivered'].includes(o.st);
     return `<div class="order ${closed?'closed':''}">
-      <div class="oh"><div><div class="ref">#${esc(o.ref)}</div><div class="time">🕒 ${when(o.at)}</div></div>
-        ${closed?`<span class="pill" style="background:${o.st==='cancelled'?'var(--danger)':'#777'}">${o.st==='cancelled'?'⛔ ملغى — لا تجهّزه':OST[o.st]}</span>`:''}</div>
+      <div class="oh"><div><div class="ref">#${esc(o.ref)}</div><div class="time">${when(o.at)}</div></div>
+        ${closed?`<span class="pill" style="background:${o.st==='cancelled'?'var(--danger)':'#777'}">${o.st==='cancelled'?'ملغى — لا تجهّزه':OST[o.st]}</span>`:''}</div>
       ${o.items.map(i => `<div class="item">
-          ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+          ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb"><svg width="45%" height="45%" viewBox="0 0 24 24" fill="none" stroke="#9A9080" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>'}
           <div style="flex:1;min-width:0"><div class="iname">${esc(i.product_name)}</div>
-            ${i.influencer_name?`<div class="time">⭐ من واجهة ${esc(i.influencer_name)}${i.ref_code?` · <span dir="ltr" style="font-family:monospace">${esc(i.ref_code)}</span>`:''}</div>`:''}
+            ${i.influencer_name?`<div class="time">من واجهة ${esc(i.influencer_name)}${i.ref_code?` · <span dir="ltr" style="font-family:monospace">${esc(i.ref_code)}</span>`:''}</div>`:''}
             <span class="pill" style="background:${PREP[i.prep_status][1]}">${PREP[i.prep_status][0]}</span></div>
           <div class="qty">×${i.qty}</div></div>
         ${closed||PREVIEW?'':`<div class="acts">
-          ${i.prep_status==='pending'?`<button class="b-prep" onclick="setSt('${i.item_id}','preparing')">🧺 بدأت التجهيز</button>`:''}
-          ${i.prep_status!=='ready'?`<button class="b-ready" onclick="setSt('${i.item_id}','ready')">✅ جاهز للاستلام</button>`:''}
+          ${i.prep_status==='pending'?`<button class="b-prep" onclick="setSt('${i.item_id}','preparing')">بدأت التجهيز</button>`:''}
+          ${i.prep_status!=='ready'?`<button class="b-ready" onclick="setSt('${i.item_id}','ready')">جاهز للاستلام</button>`:''}
           ${i.prep_status!=='pending'?`<button class="b-undo" onclick="setSt('${i.item_id}','${i.prep_status==='ready'?'preparing':'pending'}')" aria-label="تراجع">↩️ تراجع</button>`:''}
         </div>`}`).join('')}
     </div>`;
-  }).join('') || `<div class="empty">${filter==='todo'?'🎉 لا توجد طلبات بانتظار التجهيز':'لا شيء هنا'}</div>`;
+  }).join('') || `<div class="empty">${filter==='todo'?'لا توجد طلبات بانتظار التجهيز':'لا شيء هنا'}</div>`;
 }
 
 async function setSt(item, st){
   const { error } = await db.rpc('set_prep_status', { p_item: item, p_status: st });
   if (error) return toast(/closed/.test(error.message) ? 'هذا الطلب أُغلق (ملغى أو تم توصيله)' : 'تعذّر التحديث: ' + error.message);
-  toast(st === 'ready' ? '✅ تم: جاهز للاستلام' : st === 'preparing' ? '🧺 قيد التجهيز' : 'تم التراجع');
+  toast(st === 'ready' ? 'تم: جاهز للاستلام' : st === 'preparing' ? 'قيد التجهيز' : 'تم التراجع');
   const r = ROWS.find(x => x.item_id === item); if (r) r.prep_status = st;
   render();
 }
@@ -277,15 +277,15 @@ function beep(){
 }
 function alertNew(n){
   beep(); try { navigator.vibrate && navigator.vibrate([200,100,200]); } catch (e) {}
-  toast('🛎️ ' + (n > 1 ? n + ' طلبات جديدة' : 'طلب جديد') + '!');
+  toast('' + (n > 1 ? n + ' طلبات جديدة' : 'طلب جديد') + '!');
   try { if ('Notification' in window && Notification.permission === 'granted') new Notification('اشريلي — طلب جديد', { body: 'لديك ' + n + ' منتج بانتظار التجهيز', icon: 'icon-cs-192.png' }); } catch (e) {}
   filter = 'todo';
 }
 async function askNotif(){
   beep();
-  if (!('Notification' in window)) return toast('التنبيه الصوتي مفعّل ✅');
+  if (!('Notification' in window)) return toast('التنبيه الصوتي مفعّل');
   const p = await Notification.requestPermission();
-  toast(p === 'granted' ? 'التنبيهات مفعّلة ✅' : 'التنبيه الصوتي فقط (الإشعارات مرفوضة من المتصفح)');
+  toast(p === 'granted' ? 'التنبيهات مفعّلة' : 'التنبيه الصوتي فقط (الإشعارات مرفوضة من المتصفح)');
 }
 
 /* ===== المشهور: منتجاتي ومبيعاتي ===== */
@@ -299,31 +299,31 @@ function setView(v){
 function sheet(html){ $('sheetRoot').innerHTML = `<div class="sheet-bg"><div class="sheet">${html}</div></div>`; }
 function closeSheet(){ $('sheetRoot').innerHTML = ''; }
 function statusPill(p){
-  if (p.review_status === 'pending') return '<span class="pill" style="background:#b7791f">⏳ بانتظار موافقة اشريلي</span>';
-  if (p.review_status === 'rejected') return '<span class="pill" style="background:var(--danger)">❌ مرفوض</span>';
-  if (!p.active) return '<span class="pill" style="background:#888">🙈 مخفي</span>';
-  return '<span class="pill" style="background:var(--ok)">✅ منشور</span>';
+  if (p.review_status === 'pending') return '<span class="pill" style="background:#b7791f">بانتظار موافقة اشريلي</span>';
+  if (p.review_status === 'rejected') return '<span class="pill" style="background:var(--danger)">مرفوض</span>';
+  if (!p.active) return '<span class="pill" style="background:#888">مخفي</span>';
+  return '<span class="pill" style="background:var(--ok)">منشور</span>';
 }
 async function loadProducts(){
-  $('vProducts').innerHTML = '<div class="empty">⏳</div>';
+  $('vProducts').innerHTML = '<div class="empty">جارٍ التحميل</div>';
   const { data, error } = await db.rpc('celeb_my_products', { p_as: PREVIEW ? PREVIEW.celeb : null });
   if (error) { $('vProducts').innerHTML = `<div class="empty">تعذّر التحميل</div>`; return; }
   MYP = data || [];
   const pend = MYP.filter(p => p.review_status === 'pending' || p.pending_changes).length;
   $('vProducts').innerHTML = `
     ${PREVIEW?'':'<button class="addbtn" onclick="editP()">＋ إضافة منتج</button>'}
-    <div class="note">📝 كل منتج جديد أو تعديل في الاسم أو السعر أو الصورة يراجعه فريق اشريلي قبل أن يظهر للزبائن. تعديل <b>الكمية</b> يُطبَّق فوراً.${pend ? `<br>⏳ لديك <b>${pend}</b> بانتظار المراجعة.` : ''}</div>
+    <div class="note">كل منتج جديد أو تعديل في الاسم أو السعر أو الصورة يراجعه فريق اشريلي قبل أن يظهر للزبائن. تعديل <b>الكمية</b> يُطبَّق فوراً.${pend ? `<br>لديك <b>${pend}</b> بانتظار المراجعة.` : ''}</div>
     ${MYP.map(p => `<div class="pcard">
-      ${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="">` : '<div class="thumb">🛍️</div>'}
+      ${p.image_url ? `<img class="thumb" src="${esc(p.image_url)}" alt="">` : '<div class="thumb"><svg width="45%" height="45%" viewBox="0 0 24 24" fill="none" stroke="#9A9080" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>'}
       <div style="flex:1;min-width:0">
         <div class="iname">${esc(p.name)}</div>
         <div><span class="price">${fmt(p.price)}</span> · الكمية: <b style="color:${p.stock <= 3 ? 'var(--danger)' : 'inherit'}">${p.stock}</b></div>
-        <div style="margin-top:4px">${statusPill(p)} ${p.pending_changes ? '<span class="pill" style="background:#1f4e79">✏️ تعديلات بانتظار الموافقة</span>' : ''}</div>
+        <div style="margin-top:4px">${statusPill(p)} ${p.pending_changes ? '<span class="pill" style="background:#1f4e79">تعديلات بانتظار الموافقة</span>' : ''}</div>
         ${p.review_note ? `<div class="hint" style="color:var(--danger)">ملاحظة اشريلي: ${esc(p.review_note)}</div>` : ''}
         ${PREVIEW?'':`<div class="acts" style="margin-top:8px">
-          <button class="sbtn" onclick="editP('${p.id}')">✏️ تعديل</button>
-          ${p.review_status === 'approved' ? `<button class="sbtn" onclick="toggleP('${p.id}',${!p.active})">${p.active ? '🙈 إخفاء' : '👁️ إظهار'}</button>` : ''}
-        </div>`}</div></div>`).join('') || '<div class="empty">لا توجد منتجات بعد. أضف أول منتج 👆</div>'}`;
+          <button class="sbtn" onclick="editP('${p.id}')">تعديل</button>
+          ${p.review_status === 'approved' ? `<button class="sbtn" onclick="toggleP('${p.id}',${!p.active})">${p.active ? 'إخفاء' : 'إظهار'}</button>` : ''}
+        </div>`}</div></div>`).join('') || '<div class="empty">لا توجد منتجات بعد. أضف أول منتج</div>'}`;
 }
 function editP(id){
   const p = id ? MYP.find(x => x.id === id) : { name:'', description:'', price:'', stock:10, image_url:'' };
@@ -346,7 +346,7 @@ function editP(id){
     if (!(price > 0)) return toast('أدخل سعراً صحيحاً');
     if (!(stock >= 0)) return toast('أدخل كمية صحيحة');
     if (!id) { const ans = await dupAsk(db, name, { canUse: false }); if (ans === 'cancel') return; }
-    const b = $('saveBtn'); b.disabled = true; b.textContent = '⏳ جارٍ الحفظ...';
+    const b = $('saveBtn'); b.disabled = true; b.textContent = 'جارٍ الحفظ...';
     try {
       let img = null; const f = $('fImg').files[0];
       if (f) {
@@ -359,7 +359,7 @@ function editP(id){
       }
       const { error } = await db.rpc('celeb_save_product', { p_id: id || null, p_name: name, p_description: desc, p_price: price, p_stock: stock, p_image_url: img });
       if (error) throw error;
-      closeSheet(); toast(id ? 'تم الحفظ ✅' : 'أُرسل المنتج للمراجعة ✅'); loadProducts();
+      closeSheet(); toast(id ? 'تم الحفظ' : 'أُرسل المنتج للمراجعة'); loadProducts();
     } catch (e) {
       b.disabled = false; b.textContent = id ? 'حفظ' : 'إرسال للمراجعة';
       toast('تعذّر الحفظ: ' + (/api product/.test(e.message) ? 'هذا المنتج يأتي من متجرك المربوط' : e.message));
@@ -372,7 +372,7 @@ async function toggleP(id, val){
   toast(val ? 'أصبح ظاهراً للزبائن' : 'تم الإخفاء'); loadProducts();
 }
 async function loadSales(){
-  $('vSales').innerHTML = '<div class="empty">⏳</div>';
+  $('vSales').innerHTML = '<div class="empty">جارٍ التحميل</div>';
   const { data, error } = await db.rpc('celeb_sales', { p_as: PREVIEW ? PREVIEW.celeb : null });
   if (error || !data?.length) { $('vSales').innerHTML = '<div class="empty">تعذّر التحميل</div>'; return; }
   const s = data[0], c = Number(s.influencer_percent || 0);
@@ -388,7 +388,7 @@ async function loadSales(){
       <div class="stat"><div class="k">طلبات جارية</div><div class="v">${s.open_orders}</div></div>
       <div class="stat"><div class="k">قيمة الطلبات الجارية</div><div class="v">${fmt(s.open_gross)}</div></div>
     </div>
-    <div class="note">💡 الأرقام تشمل منتجاتك فقط. «نصيبك» = عمولتك على كل بيع في واجهتك + حصّتك من منتجاتك التي تورّدينها، على الطلبات التي تم توصيلها. سعر التوصيل غير محسوب.</div>`;
+    <div class="note">الأرقام تشمل منتجاتك فقط. «نصيبك» = عمولتك على كل بيع في واجهتك + حصّتك من منتجاتك التي تورّدينها، على الطلبات التي تم توصيلها. سعر التوصيل غير محسوب.</div>`;
 }
 
 /* ===== وضع المعاينة للمدير: يرى بوابة أي تاجر أو مشهور (قراءة فقط) ===== */
@@ -403,12 +403,12 @@ async function startPreview(user){
   const [kind, id] = q.split(':');
   show('app', true);
   $('portalTitle').textContent = 'معاينة واجهات المؤثّرين';
-  const pick = `<div class="note" style="background:#E7F0EC">👁️ <b>وضع المعاينة</b> — ترى البوابة كما يراها صاحبها، بدون تعديل.
+  const pick = `<div class="note" style="background:#E7F0EC"><b>وضع المعاينة</b> — ترى البوابة كما يراها صاحبها، بدون تعديل.
     <div style="margin-top:8px"><select class="field" onchange="location.search='?as='+this.value">
       <option value="">— اختر مؤثّراً —</option>
       ${C.map(x=>`<option value="celeb:${x.id}" ${kind==='celeb'&&id===x.id?'selected':''}>${esc(x.code)} · ${esc(x.name)}</option>`).join('')}
     </select></div>
-    <div style="margin-top:8px"><a href="admin.html" style="color:var(--brand);font-weight:800">⚙️ الرجوع إلى لوحة التحكم</a></div></div>`;
+    <div style="margin-top:8px"><a href="admin.html" style="color:var(--brand);font-weight:800">الرجوع إلى لوحة التحكم</a></div></div>`;
   $('hello').innerHTML = pick;
   if (kind === 'celeb' && C.some(x => x.id === id)) {
     const x = C.find(x => x.id === id);

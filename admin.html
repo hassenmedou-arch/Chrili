@@ -177,7 +177,7 @@ label{font-weight:500}
 </style>
 
 <!-- ===== شاشة التحميل ===== -->
-<div id="loading" style="min-height:100vh;display:grid;place-items:center;background:var(--brand);color:#fff;font-size:20px;font-weight:700">⏳ جارٍ التحميل...</div>
+<div id="loading" style="min-height:100vh;display:grid;place-items:center;background:var(--brand);color:#fff;font-size:20px;font-weight:700">جارٍ التحميل...</div>
 
 <!-- ===== دخول المدير ===== -->
 <section id="auth" class="hidden">
@@ -198,7 +198,7 @@ label{font-weight:500}
 <!-- ===== غير مصرّح ===== -->
 <section id="denied" class="hidden">
   <div class="denied wrap">
-    <div style="font-size:60px">🔒</div>
+    <div style="color:var(--muted)"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
     <h2 style="margin:10px 0">ليس لهذا الحساب صلاحية الدخول</h2>
     
     <p style="color:var(--muted);line-height:1.7">اطلب من مدير التطبيق أن يمنحك صلاحية «موظف»، ثم سجّل الدخول من جديد.</p>
@@ -283,7 +283,7 @@ async function doLogin(e){
   e.preventDefault();
   const phone=$('lPhone').value.trim(), pw=$('lPw').value;
   if(!/^\d{8}$/.test(phone)) return ($('authErr').textContent='رقم الهاتف يجب أن يكون 8 أرقام');
-  $('lBtn').disabled=true; $('lBtn').textContent='⏳ لحظة...';
+  $('lBtn').disabled=true; $('lBtn').textContent='لحظة...';
   const { error } = await db.auth.signInWithPassword({ email: phone+'@chrili.app', password: pw });
   $('lBtn').disabled=false; $('lBtn').textContent='دخول';
   if(error) $('authErr').textContent='رقم الهاتف أو كلمة المرور غير صحيحة';
@@ -314,24 +314,24 @@ document.querySelectorAll('#tabbar button').forEach(b=>b.onclick=()=>go(b.datase
 function go(t){
   tab=t;
   document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
-  $('main').innerHTML='<div class="empty">⏳ جارٍ التحميل...</div>';
+  $('main').innerHTML='<div class="empty">جارٍ التحميل...</div>';
   ({stats:renderStats, orders:renderOrders, products:renderProducts, catalog:renderCatalog, celebs:renderCelebs, users:renderUsers, profit:renderProfit, partners:renderPartners, errors:renderErrors})[t]();
   window.scrollTo(0,0);
 }
-function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">⚠️ ${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
+function fail(msg, error){ console.error(error); reportError(msg+': '+(error?.message||'')); $('main').innerHTML=`<div class="empty">${esc(msg)}<br><small>${esc(error?.message||'')}</small></div>`; }
 
 /* ================== الإحصاءات ================== */
 async function editShipping(){
   const { data } = await db.from('app_settings').select('key,value');
   const g=k=>(data||[]).find(r=>r.key===k)?.value;
-  sheet(`<h3>⚙️ الإعدادات</h3><h3 style="margin-top:4px">🚚 التوصيل</h3>
+  sheet(`<h3>الإعدادات</h3><h3 style="margin-top:4px">التوصيل</h3>
     <label>سعر التوصيل (أوقية)</label><input class="field" id="sFee" inputmode="numeric" value="${esc(g('shipping_fee')??120)}">
     <label>التوصيل مجاني ابتداءً من (أوقية)</label><input class="field" id="sFree" inputmode="numeric" value="${esc(g('free_shipping_from')??10000)}">
     <p class="hint">يُطبَّق على الطلبات الجديدة فقط.</p>
-    <h3 style="margin-top:18px">📱 فتح الحسابات</h3>
+    <h3 style="margin-top:18px">فتح الحسابات</h3>
     <label>طريقة تأكيد رقم الزبون</label><select id="sMode">
-      <option value="2" ${Number(g('signup_mode')??1)===2?'selected':''}>💬 رسالة واتساب يرسلها الزبون، وأنا أؤكّد (مجاني)</option>
-      <option value="1" ${Number(g('signup_mode')??1)===1?'selected':''}>📩 رمز SMS تلقائي (يحتاج مزوّد رسائل)</option></select>
+      <option value="2" ${Number(g('signup_mode')??1)===2?'selected':''}>رسالة واتساب يرسلها الزبون، وأنا أؤكّد (مجاني)</option>
+      <option value="1" ${Number(g('signup_mode')??1)===1?'selected':''}>رمز SMS تلقائي (يحتاج مزوّد رسائل)</option></select>
     <label>رقم واتساب اشريلي (يستقبل رسائل التأكيد)</label><input class="field" id="sWa" inputmode="numeric" placeholder="8 أرقام" value="${esc(g('whatsapp_number')?String(Math.trunc(g('whatsapp_number'))):'')}">
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
@@ -345,7 +345,7 @@ async function editShipping(){
     const r3=await db.from('app_settings').update({value:Number($('sMode').value), updated_at:new Date().toISOString()}).eq('key','signup_mode');
     const r4=await db.from('app_settings').update({value:Number(wa), updated_at:new Date().toISOString()}).eq('key','whatsapp_number');
     if(r1.error||r2.error||r3.error||r4.error){ busy(false); return toast('تعذّر الحفظ'); }
-    closeSheet(); toast('تم حفظ الإعدادات ✅'); renderStats();
+    closeSheet(); toast('تم حفظ الإعدادات'); renderStats();
   };
 }
 async function renderStats(){
@@ -365,21 +365,21 @@ async function renderStats(){
   const newN=orders.filter(x=>x.status==='new').length;
   const low=(p.data||[]).filter(x=>x.active && x.stock<=3).length;
   $('main').innerHTML=`
-    <h2 class="hello" style="margin-top:4px">مرحبًا ${esc(me.name)} 👋 <span class="pill" style="background:${me.role==='admin'?'#0E4D3A':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
+    <h2 class="hello" style="margin-top:4px">نظرة عامة <span class="pill" style="background:${me.role==='admin'?'#0E4D3A':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
     <p class="sub">نظرة سريعة على تطبيقك</p>
-    ${me.role==='admin'?'<div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="editShipping()">⚙️ الإعدادات (التوصيل وفتح الحسابات)</button></div>':''}
-    <div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="bannersSheet()">🖼️ بانر الرئيسية</button></div>
+    ${me.role==='admin'?'<div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="editShipping()">الإعدادات (التوصيل وفتح الحسابات)</button></div>':''}
+    <div class="toolbar" style="margin-top:8px"><button class="sbtn" onclick="bannersSheet()">بانر الرئيسية</button></div>
     <div class="stats">
-      ${me.role==='admin'?`<div class="stat"><div class="k">👥 المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
-      <div class="stat"><div class="k">📦 كل الطلبات</div><div class="v">${orders.length}</div></div>
-      <div class="stat"><div class="k">🆕 طلبات تنتظر التأكيد</div><div class="v" style="color:#b7791f">${newN}</div></div>
-      <div class="stat"><div class="k">📅 طلبات اليوم</div><div class="v">${todayN}</div></div>
-      <div class="stat"><div class="k">💰 المبيعات (غير الملغاة)</div><div class="v">${Number(sales).toLocaleString('fr-FR')} <small>أوقية</small></div></div>
-      <div class="stat"><div class="k">✅ مبيعات تم توصيلها</div><div class="v">${Number(delivered).toLocaleString('fr-FR')} <small>أوقية</small></div></div>
-      <div class="stat"><div class="k">⭐ المشاهير</div><div class="v">${c.count??0}</div></div>
-      <div class="stat"><div class="k">🏷️ المنتجات</div><div class="v">${(p.data||[]).length}</div></div>
-      ${me.role==='admin'?`<div class="stat" style="cursor:pointer" onclick="go('errors')"><div class="k">🐞 أخطاء آخر 7 أيام</div><div class="v" style="color:${er.count?'var(--danger)':'#0E4D3A'}">${er.count??0}</div></div>`:''}
-      <div class="stat"><div class="k">⚠️ مخزون منخفض (3 أو أقل)</div><div class="v" style="color:${low?'var(--danger)':'var(--ink)'}">${low}</div></div>
+      ${me.role==='admin'?`<div class="stat"><div class="k">المستخدمون</div><div class="v">${u.count??0}</div></div>`:''}
+      <div class="stat"><div class="k">كل الطلبات</div><div class="v">${orders.length}</div></div>
+      <div class="stat"><div class="k">طلبات تنتظر التأكيد</div><div class="v" style="color:#b7791f">${newN}</div></div>
+      <div class="stat"><div class="k">طلبات اليوم</div><div class="v">${todayN}</div></div>
+      <div class="stat"><div class="k">المبيعات (غير الملغاة)</div><div class="v">${Number(sales).toLocaleString('fr-FR')} <small>أوقية</small></div></div>
+      <div class="stat"><div class="k">مبيعات تم توصيلها</div><div class="v">${Number(delivered).toLocaleString('fr-FR')} <small>أوقية</small></div></div>
+      <div class="stat"><div class="k">المشاهير</div><div class="v">${c.count??0}</div></div>
+      <div class="stat"><div class="k">المنتجات</div><div class="v">${(p.data||[]).length}</div></div>
+      ${me.role==='admin'?`<div class="stat" style="cursor:pointer" onclick="go('errors')"><div class="k">أخطاء آخر 7 أيام</div><div class="v" style="color:${er.count?'var(--danger)':'#0E4D3A'}">${er.count??0}</div></div>`:''}
+      <div class="stat"><div class="k">مخزون منخفض (3 أو أقل)</div><div class="v" style="color:${low?'var(--danger)':'var(--ink)'}">${low}</div></div>
     </div>
     ${newN?`<button class="btn" style="max-width:320px" onclick="orderFilter='new';go('orders')">عرض الطلبات الجديدة (${newN})</button>`:''}`;
 }
@@ -398,14 +398,14 @@ async function renderOrders(){
     ${data.length?data.map(orderCard).join(''):'<div class="empty">لا توجد طلبات</div>'}`;
 }
 function orderCard(o){
-  const PS={pending:['⏳ بانتظار التاجر','#b7791f'],preparing:['🧺 قيد التجهيز','#1f4e79'],ready:['✅ جاهز للاستلام','#2E7D5B']};
+  const PS={pending:['بانتظار التاجر','#b7791f'],preparing:['قيد التجهيز','#1f4e79'],ready:['جاهز للاستلام','#2E7D5B']};
   const mname=id=>(MERCHANTS.find(m=>m.id===id)||{}).name||'';
   const cel=id=>(CELEBS.find(c=>c.id===id)||{}).name||'';
-  const items=o.order_items.map(i=>`${esc(i.products?.name||'منتج')} × ${i.qty} = ${fmt(i.unit_price*i.qty)}${i.celebrity_id?` <span class="pill" style="background:#6b3fa0;font-size:11.5px">⭐ من واجهة ${esc(cel(i.celebrity_id))}</span>`:''}${i.ref_code?` <span dir="ltr" style="font-family:monospace;font-size:11.5px;color:var(--muted)">${esc(i.ref_code)}</span>`:''}${i.merchant_id&&!['cancelled','delivered'].includes(o.status)?` <span class="pill" style="background:${PS[i.prep_status][1]};font-size:11.5px">${PS[i.prep_status][0]}${mname(i.merchant_id)?' · '+esc(mname(i.merchant_id)):''}</span>`:''}`).join('<br>');
-  const next={ new:[['confirmed','✔ تأكيد','pri'],['cancelled','✕ إلغاء','dan']], confirmed:[['delivered','🚚 تم التوصيل','pri'],['cancelled','✕ إلغاء','dan']], delivered:[], cancelled:[['new','↺ إرجاع إلى جديد','']] }[o.status]||[];
+  const items=o.order_items.map(i=>`${esc(i.products?.name||'منتج')} × ${i.qty} = ${fmt(i.unit_price*i.qty)}${i.celebrity_id?` <span class="pill" style="background:#6b3fa0;font-size:11.5px">من واجهة ${esc(cel(i.celebrity_id))}</span>`:''}${i.ref_code?` <span dir="ltr" style="font-family:monospace;font-size:11.5px;color:var(--muted)">${esc(i.ref_code)}</span>`:''}${i.merchant_id&&!['cancelled','delivered'].includes(o.status)?` <span class="pill" style="background:${PS[i.prep_status][1]};font-size:11.5px">${PS[i.prep_status][0]}${mname(i.merchant_id)?' · '+esc(mname(i.merchant_id)):''}</span>`:''}`).join('<br>');
+  const next={ new:[['confirmed','تأكيد','pri'],['cancelled','✕ إلغاء','dan']], confirmed:[['delivered','تم التوصيل','pri'],['cancelled','✕ إلغاء','dan']], delivered:[], cancelled:[['new','↺ إرجاع إلى جديد','']] }[o.status]||[];
   return `<div class="card">
     <div class="hd"><span class="t">طلب ${shortId(o.id)}</span>${pill(o.status)}</div>
-    <div class="s">👤 ${esc(o.customer_name||o.profiles?.full_name||'')} · 📞 ${esc(o.phone||'')}${o.profiles&&o.profiles.phone_verified===false?' <span class="pill" style="background:#b7791f">⚠️ رقم غير مؤكّد — اتصل قبل التوصيل</span>':''}<br>📍 ${esc(o.address||'—')}<br>🗓️ ${day(o.created_at)}</div>
+    <div class="s">${esc(o.customer_name||o.profiles?.full_name||'')} · ${esc(o.phone||'')}${o.profiles&&o.profiles.phone_verified===false?' <span class="pill" style="background:#b7791f">رقم غير مؤكّد — اتصل قبل التوصيل</span>':''}<br>${esc(o.address||'—')}<br>${day(o.created_at)}</div>
     <div class="s" style="color:var(--ink);margin-top:8px">${items}</div>
     <div class="hd" style="margin-top:8px"><span class="t">الإجمالي</span><span class="t" style="color:var(--brand)">${fmt(o.total)}</span></div>
     ${next.length?`<div class="acts">${next.map(([s,l,c])=>`<button class="sbtn ${c}" onclick="setStatus('${o.id}','${s}')">${l}</button>`).join('')}</div>`:''}
@@ -436,31 +436,31 @@ async function renderProducts(){
     <div class="toolbar">
       <button class="sbtn pri" onclick="editProduct()">+ منتج جديد</button>
       <select onchange="prodFilter=this.value;renderProducts()"><option value="all">كل المشاهير</option>
-        <option value="review" ${prodFilter==='review'?'selected':''}>⏳ بانتظار المراجعة (${revN})</option>
+        <option value="review" ${prodFilter==='review'?'selected':''}>بانتظار المراجعة (${revN})</option>
         ${CELEBS.map(c=>`<option value="${c.id}" ${c.id===prodFilter?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
-      <input class="grow" placeholder="🔎 بحث..." value="${esc(prodQ)}" onchange="prodQ=this.value.trim();renderProducts()">
+      <input class="grow" placeholder="بحث..." value="${esc(prodQ)}" onchange="prodQ=this.value.trim();renderProducts()">
     </div>
-    ${revN&&prodFilter!=='review'?`<div class="card" style="background:#FFF4DC;cursor:pointer" onclick="prodFilter='review';renderProducts()"><div class="s" style="color:var(--ink)">⏳ <b>${revN}</b> منتج أو تعديل من المشاهير ينتظر موافقتك — اضغط للمراجعة</div></div>`:''}
+    ${revN&&prodFilter!=='review'?`<div class="card" style="background:#FFF4DC;cursor:pointer" onclick="prodFilter='review';renderProducts()"><div class="s" style="color:var(--ink)"><b>${revN}</b> منتج أو تعديل من المشاهير ينتظر موافقتك — اضغط للمراجعة</div></div>`:''}
     ${!CELEBS.length?'<div class="empty">أضف مشهورًا أولاً من تبويب «المشاهير»</div>':''}
     ${list.map(p=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
-        ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+        ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb"><svg width="45%" height="45%" viewBox="0 0 24 24" fill="none" stroke="#9A9080" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(p.name)}</div><div class="s" dir="ltr" style="text-align:right;font-family:monospace;font-size:12px">${esc(p.code||"")}</div>
           <div class="s">${esc(cname(p.celebrity_id))} · <b style="color:var(--brand)">${fmt(p.price)}</b><br>
-          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">🔌 API</span>':''}${p.merchant_id?' · 🏪 '+esc((MERCHANTS.find(m=>m.id===p.merchant_id)||{}).name||''):''}
-          ${p.review_status==='pending'?' · <span class="pill" style="background:#b7791f">⏳ منتج جديد بانتظار موافقتك</span>':''}
-          ${p.review_status==='rejected'?' · <span class="pill" style="background:var(--danger)">❌ مرفوض</span>':''}
-          ${p.pending_changes?' · <span class="pill" style="background:#1f4e79">✏️ تعديلات بانتظار موافقتك</span>':''}</div></div>
+          المخزون: <b style="color:${p.stock<=3?'var(--danger)':'inherit'}">${p.stock}</b> ${p.active?'':' · <span class="pill" style="background:#999">مخفي</span>'}${p.source==='api'?' · <span class="pill" style="background:#1f4e79">API</span>':''}${p.merchant_id?' · '+esc((MERCHANTS.find(m=>m.id===p.merchant_id)||{}).name||''):''}
+          ${p.review_status==='pending'?' · <span class="pill" style="background:#b7791f">منتج جديد بانتظار موافقتك</span>':''}
+          ${p.review_status==='rejected'?' · <span class="pill" style="background:var(--danger)">مرفوض</span>':''}
+          ${p.pending_changes?' · <span class="pill" style="background:#1f4e79">تعديلات بانتظار موافقتك</span>':''}</div></div>
       </div>
       ${p.pending_changes?`<div class="s" style="background:var(--bg);border-radius:10px;padding:8px;margin-top:8px;color:var(--ink)">التعديلات المطلوبة:<br>
         ${p.pending_changes.name!==undefined?`الاسم: <s>${esc(p.name)}</s> ← <b>${esc(p.pending_changes.name)}</b><br>`:''}
         ${p.pending_changes.price!==undefined?`السعر: <s>${fmt(p.price)}</s> ← <b>${fmt(p.pending_changes.price)}</b><br>`:''}
         ${p.pending_changes.description!==undefined?`الوصف الجديد: ${esc(p.pending_changes.description)}<br>`:''}
         ${p.pending_changes.image_url?`الصورة الجديدة:<br><img class="thumb" style="width:90px;height:90px" src="${esc(p.pending_changes.image_url)}" alt="">`:''}</div>`:''}
-      ${needRev(p)?`<div class="acts"><button class="sbtn pri" onclick="reviewP('${p.id}',true)">✅ موافقة ونشر</button>
+      ${needRev(p)?`<div class="acts"><button class="sbtn pri" onclick="reviewP('${p.id}',true)">موافقة ونشر</button>
         <button class="sbtn dan" onclick="reviewP('${p.id}',false)">✕ رفض</button></div>`:''}
-      <div class="acts"><button class="sbtn" onclick="editProduct('${p.id}')">✏️ تعديل</button>
-        <button class="sbtn" onclick="toggleActive('products','${p.id}',${!p.active})">${p.active?'🙈 إخفاء':'👁️ إظهار'}</button>
-        <button class="sbtn dan" onclick="delRow('products','${p.id}')">🗑️ حذف</button></div></div>`).join('')
+      <div class="acts"><button class="sbtn" onclick="editProduct('${p.id}')">تعديل</button>
+        <button class="sbtn" onclick="toggleActive('products','${p.id}',${!p.active})">${p.active?'إخفاء':'إظهار'}</button>
+        <button class="sbtn dan" onclick="delRow('products','${p.id}')">حذف</button></div></div>`).join('')
       || (CELEBS.length?'<div class="empty">لا توجد منتجات</div>':'')}`;
 }
 function editProduct(id){
@@ -468,7 +468,7 @@ function editProduct(id){
   if(id){ const lp=PRODUCTS.find(x=>x.id===id); if(lp&&lp.offer_id) return editListing(lp); }
   const p=id?PRODUCTS.find(x=>x.id===id):{celebrity_id:(prodFilter!=='all'&&prodFilter!=='review')?prodFilter:CELEBS[0].id,name:'',description:'',price:'',stock:10,active:true,image_url:''};
   sheet(`<h3>${id?'تعديل منتج':'منتج جديد'}</h3>
-    ${p.source==='api'?'<p class="hint" style="color:var(--danger)">🔌 هذا المنتج يأتي من متجر التاجر: أي تعديل هنا سيُستبدل في المزامنة القادمة. عدّل السعر من إعدادات الربط.</p>':''}
+    ${p.source==='api'?'<p class="hint" style="color:var(--danger)">هذا المنتج يأتي من متجر التاجر: أي تعديل هنا سيُستبدل في المزامنة القادمة. عدّل السعر من إعدادات الربط.</p>':''}
     <label>المشهور صاحب المنتج</label>
     <select id="fCeleb">${CELEBS.map(c=>`<option value="${c.id}" ${c.id===p.celebrity_id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     <label>اسم المنتج</label><input class="field" id="fName" value="${esc(p.name)}">
@@ -492,14 +492,14 @@ function editProduct(id){
     if(!id){
       const ans=await dupAsk(db,row.name,{canUse:true});
       if(ans==='cancel') return;
-      if(ans&&ans.use){ closeSheet(); catQ=ans.use.code; go('catalog'); toast('المنتج موجود '+ans.use.code+' — اضغط «⭐ اعرضه عند مؤثّر» تحت مرجعه'); return; }
+      if(ans&&ans.use){ closeSheet(); catQ=ans.use.code; go('catalog'); toast('المنتج موجود '+ans.use.code+' — اضغط «اعرضه عند مؤثّر» تحت مرجعه'); return; }
     }
     busy(true);
     try{
       const url=await uploadImage($('fImg').files[0]); if(url) row.image_url=url;
       const { error } = id ? await db.from('products').update(row).eq('id',id) : await db.from('products').insert(row);
       if(error) throw error;
-      closeSheet(); toast('تم الحفظ ✅'); renderProducts();
+      closeSheet(); toast('تم الحفظ'); renderProducts();
     }catch(e){ busy(false); reportError('saveProduct: '+e.message); toast('تعذّر الحفظ: '+e.message); }
   };
 }
@@ -526,30 +526,30 @@ async function renderCatalog(){
      || CAT.offers.some(o=>o.product_id===p.id&&o.code.toLowerCase().includes(q)));
   $('main').innerHTML=`
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink);line-height:1.8">
-      📚 <b>منتج واحد في الكتالوج</b> (P…) ← <b>مرجع لكل مورّد</b> (F…-P…: السعر والمخزون) ← <b>عرض لكل مؤثّر</b> (I…·F…-P…).<br>
+      <b>منتج واحد في الكتالوج</b> (P…) ← <b>مرجع لكل مورّد</b> (F…-P…: السعر والمخزون) ← <b>عرض لكل مؤثّر</b> (I…·F…-P…).<br>
       المؤثّرون الذين يعرضون نفس المرجع <b>يتقاسمون نفس المخزون</b>، ومبيعات كل واحد تُسجَّل باسمه.</div></div>
-    ${me.role==='admin'?`<div class="card"><div class="s" style="color:var(--ink)">🎨 كل صورة جديدة توضع تلقائياً على <b>خلفية اشريلي الموحّدة</b>.</div>
-      <div class="acts"><button class="sbtn pri" onclick="restudioAll()">🎨 توحيد خلفية كل الصور الحالية</button></div></div>`:''}
+    ${me.role==='admin'?`<div class="card"><div class="s" style="color:var(--ink)">كل صورة جديدة توضع تلقائياً على <b>خلفية اشريلي الموحّدة</b>.</div>
+      <div class="acts"><button class="sbtn pri" onclick="restudioAll()">توحيد خلفية كل الصور الحالية</button></div></div>`:''}
     <div class="toolbar"><button class="sbtn pri" onclick="editCatProd()">+ منتج في الكتالوج</button>
-      <button class="sbtn" onclick="showCategories()">📂 الأقسام</button>
-      <input class="field grow" placeholder="🔎 كود أو اسم أو باركود..." value="${esc(catQ)}" oninput="catQ=this.value;clearTimeout(window._cq);window._cq=setTimeout(renderCatalog,350)">
+      <button class="sbtn" onclick="showCategories()">الأقسام</button>
+      <input class="field grow" placeholder="كود أو اسم أو باركود..." value="${esc(catQ)}" oninput="catQ=this.value;clearTimeout(window._cq);window._cq=setTimeout(renderCatalog,350)">
       <span style="color:var(--muted);font-weight:700">${CAT.prods.length} منتج · ${CAT.offers.length} مرجع · ${CAT.cats.length} قسم</span></div>
     ${list.map(p=>{ const offs=CAT.offers.filter(o=>o.product_id===p.id); const vs=CAT.vars.filter(v=>v.product_id===p.id);
       return `<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
-        ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+        ${p.image_url?`<img class="thumb" src="${esc(p.image_url)}" alt="">`:'<div class="thumb"><svg width="45%" height="45%" viewBox="0 0 24 24" fill="none" stroke="#9A9080" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(p.name)} ${p.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</div>
           <div class="s"><b dir="ltr" style="font-family:monospace">${esc(p.code)}</b> · ${catLabel(p.category_id)}${p.brand?' · '+esc(p.brand):''}${p.barcode?' · <span dir="ltr">'+esc(p.barcode)+'</span>':''}
           ${vs.length?'<br>المقاسات: '+vs.map(v=>`<span dir="ltr" style="font-family:monospace">${esc(v.code)}</span> ${esc(v.label)}`).join(' · '):''}</div></div></div>
         ${offs.map(o=>{ const v=vs.find(x=>x.id===o.variant_id); const ls=listings(o.id);
           return `<div class="s" style="background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:8px;color:var(--ink)">
             <b dir="ltr" style="font-family:monospace">${esc(o.code)}</b> · ${stk(sup(o.supplier_id).stock_type).i} ${esc(sup(o.supplier_id).name||'')}${v?' · '+esc(v.label):''} ${o.active?'':'<span class="pill" style="background:#999">موقوف</span>'}<br>
-            💰 البيع ${fmt(o.base_price)}${o.cost_price!=null?' · الشراء '+fmt(o.cost_price):''} · 📦 المخزون المشترك <b style="color:${o.stock<=3?'var(--danger)':'inherit'}">${o.stock}</b><br>
-            ⭐ ${ls.length?ls.map(l=>esc((CELEBS.find(c=>c.id===l.celebrity_id)||{}).name||'')+(Number(l.price)!==Number(o.base_price)?' ('+fmt(l.price)+')':'')).join('، '):'لا يعرضه أي مؤثّر بعد'}
-            <div class="acts" style="margin-top:6px"><button class="sbtn" onclick="editOffer('${p.id}','${o.id}')">✏️ المرجع</button>
-              <button class="sbtn pri" onclick="assignOffer('${o.id}')">⭐ اعرضه عند مؤثّر</button></div></div>`; }).join('')}
+            البيع ${fmt(o.base_price)}${o.cost_price!=null?' · الشراء '+fmt(o.cost_price):''} · المخزون المشترك <b style="color:${o.stock<=3?'var(--danger)':'inherit'}">${o.stock}</b><br>
+            ${ls.length?ls.map(l=>esc((CELEBS.find(c=>c.id===l.celebrity_id)||{}).name||'')+(Number(l.price)!==Number(o.base_price)?' ('+fmt(l.price)+')':'')).join('، '):'لا يعرضه أي مؤثّر بعد'}
+            <div class="acts" style="margin-top:6px"><button class="sbtn" onclick="editOffer('${p.id}','${o.id}')">المرجع</button>
+              <button class="sbtn pri" onclick="assignOffer('${o.id}')">اعرضه عند مؤثّر</button></div></div>`; }).join('')}
         <div class="acts"><button class="sbtn pri" onclick="editOffer('${p.id}')">+ مرجع (مورّد)</button>
           <button class="sbtn" onclick="addVariant('${p.id}')">+ مقاس</button>
-          <button class="sbtn" onclick="editCatProd('${p.id}')">✏️ البطاقة</button></div></div>`; }).join('') || '<div class="empty">لا توجد نتائج</div>'}`;
+          <button class="sbtn" onclick="editCatProd('${p.id}')">البطاقة</button></div></div>`; }).join('') || '<div class="empty">لا توجد نتائج</div>'}`;
 }
 /* شجرة الأقسام: رئيسي C01 → فرعي C0101 */
 const catMains=()=>CAT.cats.filter(c=>!c.parent_id).sort((a,b)=>a.code.localeCompare(b.code));
@@ -560,7 +560,7 @@ const catOptions=sel=>catMains().map(m=>`<optgroup label="${esc(m.code)} ${m.ico
 const catLabel=id=>{ const c=CAT.cats.find(x=>x.id===id); if(!c) return 'بدون قسم'; const p=c.parent_id&&CAT.cats.find(x=>x.id===c.parent_id);
   return `<span dir="ltr" style="font-family:monospace">${esc(c.code)}</span> ${p?esc(p.name)+' › ':''}${esc(c.name)}`; };
 function showCategories(){
-  sheet(`<h3>📂 الأقسام (${catMains().length} رئيسي · ${CAT.cats.length-catMains().length} فرعي)</h3>
+  sheet(`<h3>الأقسام (${catMains().length} رئيسي · ${CAT.cats.length-catMains().length} فرعي)</h3>
     <p class="hint">رمز القسم الرئيسي حرفان بعد C (C09 = أكل)، والفرعي أربعة (C0901 = تمور).</p>
     ${catMains().map(m=>`<div style="margin:10px 0"><b>${m.icon||''} <span dir="ltr" style="font-family:monospace">${esc(m.code)}</span> ${esc(m.name)}</b>
       <div class="s" style="line-height:1.9">${catSubs(m.id).map(c=>`<span dir="ltr" style="font-family:monospace">${esc(c.code)}</span> ${esc(c.name)}`).join(' · ')}</div></div>`).join('')}
@@ -576,7 +576,7 @@ function editCategory(){
   $('saveBtn').onclick=async()=>{ const name=$('cName').value.trim(); if(name.length<2) return toast('أدخل اسم الفئة');
     busy(true); const { error }=await db.from('categories').insert({name, parent_id:$('cParent').value||null});
     if(error){ busy(false); return toast(/duplicate|unique/.test(error.message)?'هذه الفئة موجودة':'تعذّر الحفظ: '+error.message); }
-    closeSheet(); toast('تمت إضافة الفئة ✅'); renderCatalog(); };
+    closeSheet(); toast('تمت إضافة الفئة'); renderCatalog(); };
 }
 function editCatProd(id){
   const p=id?CAT.prods.find(x=>x.id===id):{name:'',brand:'',description:'',barcode:'',category_id:'',image_url:'',active:true};
@@ -610,7 +610,7 @@ function editCatProd(id){
     busy(true);
     try{ const url=await uploadImage($('kImg').files[0]); if(url) row.image_url=url;
       const { error } = id ? await db.from('catalog_products').update(row).eq('id',id) : await db.from('catalog_products').insert(row);
-      if(error) throw error; closeSheet(); toast('تم الحفظ ✅'); renderCatalog();
+      if(error) throw error; closeSheet(); toast('تم الحفظ'); renderCatalog();
     }catch(e){ busy(false); toast('تعذّر الحفظ: '+(/barcode/.test(e.message)?'الباركود مستعمل':e.message)); }
   };
 }
@@ -623,7 +623,7 @@ function addVariant(pid){
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{ const label=$('vLabel').value.trim(); if(!label) return toast('أدخل المقاس');
     busy(true); const { error }=await db.from('product_variants').insert({product_id:pid,label,barcode:$('vBar').value.trim()||null});
-    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); } closeSheet(); toast('تمت إضافة المقاس ✅'); renderCatalog(); };
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); } closeSheet(); toast('تمت إضافة المقاس'); renderCatalog(); };
 }
 function editOffer(pid, oid){
   const p=CAT.prods.find(x=>x.id===pid), vs=CAT.vars.filter(v=>v.product_id===pid);
@@ -632,7 +632,7 @@ function editOffer(pid, oid){
   sheet(`<h3>${oid?'المرجع '+esc(o.code):'مرجع جديد لـ '+esc(p.name)}</h3>
     <p class="hint">المرجع = هذا المنتج عند مورّد معيّن. كل المؤثّرين الذين يعرضونه يتقاسمون مخزونه.</p>
     <label>المخزون (صاحب البضاعة)</label><select id="oSup" ${oid?'disabled':''}>${supOptions(o.supplier_id)}</select>
-    <p class="hint">بالترتيب: 🟢 اشريلي · ⭐ مشهور (بضاعته الخاصة) · 🏪 تاجر. لإنشاء مخزون لمشهور اضغط «⭐ بضاعته الخاصة» في بطاقته.</p>
+    <p class="hint">بالترتيب: اشريلي · مشهور (بضاعته الخاصة) · تاجر. لإنشاء مخزون لمشهور اضغط «بضاعته الخاصة» في بطاقته.</p>
     ${vs.length?`<label>المقاس</label><select id="oVar" ${oid?'disabled':''}><option value="">— بدون مقاس —</option>${vs.map(v=>`<option value="${v.id}" ${v.id===o.variant_id?'selected':''}>${esc(v.code)} · ${esc(v.label)}</option>`).join('')}</select>`:''}
     <label>سعر البيع الأساسي (أوقية)</label><input class="field" id="oPrice" inputmode="decimal" value="${esc(o.base_price)}">
     <label>سعر الشراء من المورّد (اختياري، لا يراه إلا الإدارة)</label><input class="field" id="oCost" inputmode="decimal" value="${esc(o.cost_price??'')}">
@@ -651,7 +651,7 @@ function editOffer(pid, oid){
     busy(true);
     const { error } = oid ? await db.from('offers').update(row).eq('id',oid) : await db.from('offers').insert(row);
     if(error){ busy(false); return toast(/duplicate|unique/.test(error.message)?'هذا المورّد له مرجع لهذا المنتج من قبل: عدّله بدل إنشاء جديد':'تعذّر الحفظ: '+error.message); }
-    closeSheet(); toast('تم الحفظ ✅'); renderCatalog();
+    closeSheet(); toast('تم الحفظ'); renderCatalog();
   };
 }
 function assignOffer(oid){
@@ -670,22 +670,22 @@ function assignOffer(oid){
     busy(true);
     const { error } = await db.from('products').insert({ celebrity_id:$('aCeleb').value, offer_id:oid, price, active:true, review_status:'approved' });
     if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
-    closeSheet(); toast('أصبح المنتج ظاهراً عند المؤثّر ✅'); renderCatalog();
+    closeSheet(); toast('أصبح المنتج ظاهراً عند المؤثّر'); renderCatalog();
   };
 }
 function editListing(l){
   const o=null;
   sheet(`<h3>عرض ${esc(l.code||'')}</h3>
-    <p class="hint">هذا العرض مرتبط بمرجع في الكتالوج: الاسم والوصف والصورة تُعدَّل من <b>بطاقة المنتج</b>، والمخزون المشترك من <b>المرجع</b> (تبويب 📚 الكتالوج).</p>
+    <p class="hint">هذا العرض مرتبط بمرجع في الكتالوج: الاسم والوصف والصورة تُعدَّل من <b>بطاقة المنتج</b>، والمخزون المشترك من <b>المرجع</b> (تبويب الكتالوج).</p>
     <p class="s"><b>${esc(l.name)}</b> · المخزون المشترك: ${l.stock}</p>
     <label>سعر البيع عند هذا المؤثّر (أوقية)</label><input class="field" id="lPrice" inputmode="decimal" value="${esc(l.price)}">
     <label class="chk"><input type="checkbox" id="lAct" ${l.active?'checked':''}> ظاهر للزبائن عند هذا المؤثّر</label>
     <button class="btn" id="saveBtn">حفظ</button>
-    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="catQ='${esc((l.code||'').split('·')[1]||'')}';closeSheet();go('catalog')">📚 فتح المرجع في الكتالوج</button>
+    <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="catQ='${esc((l.code||'').split('·')[1]||'')}';closeSheet();go('catalog')">فتح المرجع في الكتالوج</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{ const price=Number($('lPrice').value.replace(',','.')); if(!(price>0)) return toast('السعر غير صحيح');
     busy(true); const { error }=await db.from('products').update({price, active:$('lAct').checked}).eq('id',l.id);
-    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); } closeSheet(); toast('تم الحفظ ✅'); renderProducts(); };
+    if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); } closeSheet(); toast('تم الحفظ'); renderProducts(); };
 }
 
 /* ================== المشاهير ================== */
@@ -696,17 +696,17 @@ async function renderCelebs(){
     <div class="toolbar"><button class="sbtn pri" onclick="editCeleb()">+ مشهور جديد</button>
       <span style="color:var(--muted);font-weight:700">${CELEBS.length} مشهور</span></div>
     ${CELEBS.map(c=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
-        ${c.avatar_url?`<img class="thumb" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:'<div class="thumb" style="border-radius:50%">⭐</div>'}
+        ${c.avatar_url?`<img class="thumb" style="border-radius:50%" src="${esc(c.avatar_url)}" alt="">`:'<div class="thumb" style="border-radius:50%"><svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="#9A9080" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="9" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(c.name)} ${c.active?'':'<span class="pill" style="background:#999">مخفي</span>'}</div>
           <div class="s"><b dir="ltr" style="font-family:monospace">${esc(c.code||'')}</b> · ${esc(c.category||'')}${c.followers?' · '+esc(c.followers)+' متابع':''} · ${count(c.id)} منتجات · عمولة المؤثّر ${Number(c.influencer_percent??5)}%
-          ${c.owner_id?' · <span class="pill" style="background:#2E7D5B">🔑 يدير واجهته</span>':''}</div></div></div>
-      <div class="acts"><button class="sbtn" onclick="editCeleb('${c.id}')">✏️ تعديل</button>
-        <button class="sbtn" onclick="prodFilter='${c.id}';go('products')">🏷️ منتجاته</button>
-        <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" href="merchant.html?as=celeb:${c.id}">👁️ واجهته</a>
-        <button class="sbtn" onclick="starStock('${c.id}')">⭐ بضاعته الخاصة</button>
-        ${me.role==='admin'&&!c.owner_id?`<button class="sbtn pri" onclick="celebAccount('${c.id}')">🔑 حساب ليدير واجهته</button>`:''}
-        <button class="sbtn" onclick="toggleActive('celebrities','${c.id}',${!c.active})">${c.active?'🙈 إخفاء':'👁️ إظهار'}</button>
-        <button class="sbtn dan" onclick="delRow('celebrities','${c.id}')">🗑️ حذف</button></div></div>`).join('')
+          ${c.owner_id?' · <span class="pill" style="background:#2E7D5B">يدير واجهته</span>':''}</div></div></div>
+      <div class="acts"><button class="sbtn" onclick="editCeleb('${c.id}')">تعديل</button>
+        <button class="sbtn" onclick="prodFilter='${c.id}';go('products')">منتجاته</button>
+        <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" href="merchant.html?as=celeb:${c.id}">واجهته</a>
+        <button class="sbtn" onclick="starStock('${c.id}')">بضاعته الخاصة</button>
+        ${me.role==='admin'&&!c.owner_id?`<button class="sbtn pri" onclick="celebAccount('${c.id}')">حساب ليدير واجهته</button>`:''}
+        <button class="sbtn" onclick="toggleActive('celebrities','${c.id}',${!c.active})">${c.active?'إخفاء':'إظهار'}</button>
+        <button class="sbtn dan" onclick="delRow('celebrities','${c.id}')">حذف</button></div></div>`).join('')
       || '<div class="empty">لا يوجد مشاهير بعد</div>'}`;
 }
 function editCeleb(id){
@@ -734,7 +734,7 @@ function editCeleb(id){
       const url=await uploadImage($('fImg').files[0], true); if(url) row.avatar_url=url;
       const { error } = id ? await db.from('celebrities').update(row).eq('id',id) : await db.from('celebrities').insert(row);
       if(error) throw error;
-      closeSheet(); toast('تم الحفظ ✅'); renderCelebs();
+      closeSheet(); toast('تم الحفظ'); renderCelebs();
     }catch(e){ busy(false); toast('تعذّر الحفظ: '+e.message); }
   };
 }
@@ -748,23 +748,23 @@ async function renderUsers(){
   const admins=data.filter(u=>u.role==='staff').length;
   $('main').innerHTML=`<div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} مستخدم مسجّل · ${admins} موظف</span></div>
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
-      ➕ <b>لإضافة شخص:</b> اضغط «إضافة مستخدم»، واختر «زبون» أو «موظف»، ثم أعطه رقمه وكلمة المرور ليدخل بهما.<br>👷 الموظف يدير الطلبات والمنتجات والمشاهير، ولا يرى المستخدمين ولا يمنح الصلاحيات. أنت وحدك ترى كل شيء.</div></div>
-    ${(()=>{ const pend=data.filter(u=>u.phone_verified===false); return pend.length?`<h3 style="margin:8px 0">⏳ بانتظار تأكيد الرقم (${pend.length})</h3>
-      <div class="card" style="background:#E8F8EE"><div class="s" style="color:var(--ink)">📱 كل زبون جديد يرسل لك على واتساب رسالة فيها رمزه. إذا وصلتك الرسالة <b>من نفس الرقم وبنفس الرمز</b> اضغط «✅ تأكيد».</div></div>
+      <b>لإضافة شخص:</b> اضغط «إضافة مستخدم»، واختر «زبون» أو «موظف»، ثم أعطه رقمه وكلمة المرور ليدخل بهما.<br>الموظف يدير الطلبات والمنتجات والمشاهير، ولا يرى المستخدمين ولا يمنح الصلاحيات. أنت وحدك ترى كل شيء.</div></div>
+    ${(()=>{ const pend=data.filter(u=>u.phone_verified===false); return pend.length?`<h3 style="margin:8px 0">بانتظار تأكيد الرقم (${pend.length})</h3>
+      <div class="card" style="background:#E8F8EE"><div class="s" style="color:var(--ink)">كل زبون جديد يرسل لك على واتساب رسالة فيها رمزه. إذا وصلتك الرسالة <b>من نفس الرقم وبنفس الرمز</b> اضغط «تأكيد».</div></div>
       ${pend.map(u=>`<div class="card"><div class="hd"><span class="t">${esc(u.full_name||'—')}</span><span class="t" dir="ltr" style="font-family:monospace;font-size:18px">${esc(u.verify_code||'—')}</span></div>
-        <div class="s">📞 <span dir="ltr">${esc(u.phone)}</span> · سجّل في ${day(u.created_at)}</div>
-        <div class="acts"><button class="sbtn pri" onclick="confirmPhone('${u.id}')">✅ تأكيد</button>
-          <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" target="_blank" rel="noopener" href="https://wa.me/222${esc(u.phone)}">💬 واتساب</a></div></div>`).join('')}
+        <div class="s"><span dir="ltr">${esc(u.phone)}</span> · سجّل في ${day(u.created_at)}</div>
+        <div class="acts"><button class="sbtn pri" onclick="confirmPhone('${u.id}')">تأكيد</button>
+          <a class="sbtn" style="text-decoration:none;display:inline-flex;align-items:center" target="_blank" rel="noopener" href="https://wa.me/222${esc(u.phone)}">واتساب</a></div></div>`).join('')}
       <h3 style="margin:16px 0 8px">كل المستخدمين</h3>`:''; })()}
     <div class="toolbar"><button class="sbtn pri" onclick="addUser()">+ إضافة مستخدم</button>
-      <input class="grow" id="uq" placeholder="🔎 ابحث بالاسم أو الهاتف..." oninput="filterUsers()"></div>
+      <input class="grow" id="uq" placeholder="ابحث بالاسم أو الهاتف..." oninput="filterUsers()"></div>
     <div id="ulist">${data.map(u=>`<div class="card" data-k="${esc((u.full_name||'')+' '+u.phone)}"><div class="hd"><span class="t">${esc(u.full_name||'—')}${u.id===me.id?' (أنت)':''}</span>
       <span class="pill" style="background:${roleC[u.role]||'#666'}">${roleL[u.role]||u.role}</span></div>
-      <div class="s">📞 ${esc(u.phone)} ${u.phone_verified===false?'<span class="pill" style="background:#b7791f">⏳ غير مؤكّد</span>':'<span style="color:#2E7D5B">✔ مؤكّد</span>'} · سجّل في ${day(u.created_at)}</div>
-      ${(u.id===me.id||u.role==='admin')?'':u.role==='merchant'?`<div class="acts"><button class="sbtn" onclick="go('partners')">🏪 إدارته من تبويب التجّار</button><button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`:`<div class="acts">${u.role==='staff'
+      <div class="s">${esc(u.phone)} ${u.phone_verified===false?'<span class="pill" style="background:#b7791f">غير مؤكّد</span>':'<span style="color:#2E7D5B">مؤكّد</span>'} · سجّل في ${day(u.created_at)}</div>
+      ${(u.id===me.id||u.role==='admin')?'':u.role==='merchant'?`<div class="acts"><button class="sbtn" onclick="go('partners')">إدارته من تبويب التجّار</button><button class="sbtn" onclick="resetPw('${u.id}')">كلمة مرور جديدة</button></div>`:`<div class="acts">${u.role==='staff'
         ?`<button class="sbtn dan" onclick="setRole('${u.id}','customer')">إزالة صلاحية الموظف</button>`
-        :`<button class="sbtn pri" onclick="setRole('${u.id}','staff')">👷 اجعله موظفاً</button>`}
-        <button class="sbtn" onclick="resetPw('${u.id}')">🔑 كلمة مرور جديدة</button></div>`}
+        :`<button class="sbtn pri" onclick="setRole('${u.id}','staff')">اجعله موظفاً</button>`}
+        <button class="sbtn" onclick="resetPw('${u.id}')">كلمة مرور جديدة</button></div>`}
     </div>`).join('')}</div>`;
 }
 /* ===== بانر الرئيسية ===== */
@@ -772,12 +772,12 @@ async function bannersSheet(){
   const [{ data, error }, cs] = await Promise.all([db.from('banners').select('*').order('sort').order('created_at',{ascending:false}), db.from('celebrities').select('id,name,code').order('created_at')]);
   if(error) return toast('تعذّر التحميل: '+error.message);
   window._CELS=cs.data||[];
-  sheet(`<h3>🖼️ بانر الرئيسية</h3><p class="hint">يظهر أول بانر مفعّل في أعلى الرئيسية عند الزبون. الضغط عليه يفتح واجهة المشهور المختار.</p>
+  sheet(`<h3>بانر الرئيسية</h3><p class="hint">يظهر أول بانر مفعّل في أعلى الرئيسية عند الزبون. الضغط عليه يفتح واجهة المشهور المختار.</p>
     ${(data||[]).map(b=>`<div class="card"><div class="hd"><span class="t">${esc(b.title)}</span>${b.active?'<span class="pill" style="background:#2E7D5B">ظاهر</span>':'<span class="pill" style="background:#999">مخفي</span>'}</div>
       <div class="s">${esc(b.tag||'')} · ${esc((window._CELS.find(c=>c.id===b.celebrity_id)||{}).name||'كل المشاهير')}</div>
-      <div class="acts"><button class="sbtn" onclick='editBanner(${JSON.stringify(b.id)})'>✏️ تعديل</button>
-        <button class="sbtn" onclick='toggleBanner(${JSON.stringify(b.id)},${!b.active})'>${b.active?'🙈 إخفاء':'👁️ إظهار'}</button>
-        <button class="sbtn" style="color:var(--danger)" onclick='delBanner(${JSON.stringify(b.id)})'>🗑️ حذف</button></div></div>`).join('')||'<div class="empty">لا يوجد بانر</div>'}
+      <div class="acts"><button class="sbtn" onclick='editBanner(${JSON.stringify(b.id)})'>تعديل</button>
+        <button class="sbtn" onclick='toggleBanner(${JSON.stringify(b.id)},${!b.active})'>${b.active?'إخفاء':'إظهار'}</button>
+        <button class="sbtn" style="color:var(--danger)" onclick='delBanner(${JSON.stringify(b.id)})'>حذف</button></div></div>`).join('')||'<div class="empty">لا يوجد بانر</div>'}
     <button class="btn" onclick="editBanner(null)">+ بانر جديد</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إغلاق</button>`);
   window._BAN=data||[];
@@ -802,7 +802,7 @@ function editBanner(id){
       else if($('bNoImg')&&$('bNoImg').checked) row.image_url=null;
       const { error } = id ? await db.from('banners').update(row).eq('id',id) : await db.from('banners').insert(row);
       if(error) throw error;
-      toast('تم الحفظ ✅'); bannersSheet();
+      toast('تم الحفظ'); bannersSheet();
     }catch(e){ busy(false); toast('تعذّر الحفظ: '+(e.message||e)); }
   };
 }
@@ -811,7 +811,7 @@ async function delBanner(id){ if(window._delArm!==id){ window._delArm=id; return
 async function confirmPhone(id){
   const { error } = await db.rpc('confirm_phone',{ p_user:id });
   if(error) return toast('تعذّر التأكيد: '+error.message);
-  toast('تم تأكيد الرقم ✅'); renderUsers();
+  toast('تم تأكيد الرقم'); renderUsers();
 }
 async function callAdmin(body){
   const { data, error } = await db.functions.invoke('admin-users', { body });
@@ -829,7 +829,7 @@ function addUser(){
     <label>رقم الهاتف</label><input class="field" id="nPhone" inputmode="numeric" placeholder="8 أرقام">
     <label>كلمة المرور</label><input class="field" id="nPw" placeholder="6 أحرف على الأقل" autocomplete="new-password">
     <label>نوع الحساب</label>
-    <select id="nRole"><option value="customer">زبون</option><option value="staff">👷 موظف (يدير الطلبات والمنتجات)</option></select>
+    <select id="nRole"><option value="customer">زبون</option><option value="staff">موظف (يدير الطلبات والمنتجات)</option></select>
     <p class="hint">أعطِ الشخص رقمه وكلمة المرور ليدخل بهما، ويستطيع أن تغيّرها له لاحقاً.</p>
     <button class="btn" id="saveBtn">إنشاء الحساب</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
@@ -838,8 +838,8 @@ function addUser(){
     if(body.full_name.length<2) return toast('أدخل الاسم');
     if(!/^\d{8}$/.test(body.phone)) return toast('رقم الهاتف يجب أن يكون 8 أرقام');
     if(body.password.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
-    const b=$('saveBtn'); b.disabled=true; b.textContent='⏳ جارٍ الإنشاء...';
-    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء الحساب ✅'); renderUsers(); }
+    const b=$('saveBtn'); b.disabled=true; b.textContent='جارٍ الإنشاء...';
+    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء الحساب'); renderUsers(); }
     catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
   };
 }
@@ -852,7 +852,7 @@ function resetPw(id){
   $('saveBtn').onclick=async()=>{
     const pw=$('rPw').value; if(pw.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
     busy(true);
-    try{ await callAdmin({ action:'set_password', id, password:pw }); closeSheet(); toast('تم تغيير كلمة المرور ✅'); }
+    try{ await callAdmin({ action:'set_password', id, password:pw }); closeSheet(); toast('تم تغيير كلمة المرور'); }
     catch(e){ busy(false); toast('تعذّر التغيير: '+e.message); }
   };
 }
@@ -868,7 +868,7 @@ function setRole(id,role){
   confirmBox(msg, async()=>{
     const { error } = await db.from('profiles').update({role}).eq('id',id);
     if(error) return toast('تعذّر التحديث: '+error.message);
-    toast(role==='staff'?'أصبح موظفاً ✅':'تمت إزالة الصلاحية'); renderUsers();
+    toast(role==='staff'?'أصبح موظفاً':'تمت إزالة الصلاحية'); renderUsers();
   });
 }
 
@@ -892,40 +892,40 @@ async function renderPartners(){
   const cnt=id=>PRODUCTS.filter(p=>p.partner_id===id).length;
   const when=d=>d?new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'لم تتم بعد';
   const mHtml=`
-    <h3 style="margin:6px 0 8px">📦 المخازن الثلاثة</h3>
+    <h3 style="margin:6px 0 8px">المخازن الثلاثة</h3>
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       المورّدون ليست لهم واجهة في التطبيق: فريق اشريلي يدير منتجاتهم ومخزونهم وطلبات التجهيز من هنا ومن تبويب «الطلبات».<br>
-      🏷️ حدّد لكل منتج تاجره من تبويب «المنتجات» (أو من إعدادات الربط أدناه).</div></div>
-    <div class="toolbar"><button class="sbtn" onclick="addChriliStock()">+ 🟢 مستودع اشريلي</button><button class="sbtn pri" onclick="addMerchant()">+ 🏪 تاجر</button>
-      <span style="color:var(--muted);font-weight:700">⭐ مخزون المشهور يُنشأ من بطاقته في تبويب المشاهير</span></div>
+      حدّد لكل منتج تاجره من تبويب «المنتجات» (أو من إعدادات الربط أدناه).</div></div>
+    <div class="toolbar"><button class="sbtn" onclick="addChriliStock()">+ مستودع اشريلي</button><button class="sbtn pri" onclick="addMerchant()">+ تاجر</button>
+      <span style="color:var(--muted);font-weight:700">مخزون المشهور يُنشأ من بطاقته في تبويب المشاهير</span></div>
     ${MERCHANTS.map((m,i)=>`${i===0||MERCHANTS[i-1].stock_type!==m.stock_type?`<h4 style="margin:16px 0 6px;color:${stk(m.stock_type).c}">${stk(m.stock_type).o}) ${stk(m.stock_type).i} ${stk(m.stock_type).l}</h4>`:''}<div class="card"><div class="hd"><span class="t"><span dir="ltr" style="font-family:monospace">${esc(m.code||'')}</span> · ${esc(m.name)} ${m.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
-        <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">⏳ ${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">✅ ${ready(m.id)} جاهز</span>`:''}</span></div>
-      <div class="s">📞 ${esc(m.phone||'—')} · 🏷️ ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج · 💰 عمولة اشريلي ${Number(m.platform_percent??5)}%</div>
-      <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">✏️ الاسم والعمولة</button>
-        ${m.user_id?`<button class="sbtn" onclick="resetMerchantPw('${m.id}')">🔑 كلمة مرور جديدة</button>`:''}
-        <button class="sbtn ${m.active?'dan':''}" onclick="toggleMerchant('${m.id}',${!m.active})">${m.active?'⛔ إيقاف':'✅ تفعيل'}</button></div></div>`).join('')
+        <span>${pend(m.id)?`<span class="pill" style="background:#b7791f">${pend(m.id)} للتجهيز</span>`:''} ${ready(m.id)?`<span class="pill" style="background:#2E7D5B">${ready(m.id)} جاهز</span>`:''}</span></div>
+      <div class="s">${esc(m.phone||'—')} · ${PRODUCTS.filter(p=>p.merchant_id===m.id).length} منتج · عمولة اشريلي ${Number(m.platform_percent??5)}%</div>
+      <div class="acts"><button class="sbtn" onclick="renameMerchant('${m.id}')">الاسم والعمولة</button>
+        ${m.user_id?`<button class="sbtn" onclick="resetMerchantPw('${m.id}')">كلمة مرور جديدة</button>`:''}
+        <button class="sbtn ${m.active?'dan':''}" onclick="toggleMerchant('${m.id}',${!m.active})">${m.active?'إيقاف':'تفعيل'}</button></div></div>`).join('')
       || '<div class="empty">لا يوجد حساب تاجر بعد</div>'}
-    <h3 style="margin:22px 0 8px">🔌 الربط بأنظمة التجّار (API)</h3>`;
+    <h3 style="margin:22px 0 8px">الربط بأنظمة التجّار (API)</h3>`;
   $('main').innerHTML=mHtml+`
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
-      🔌 <b>اربط متجر تاجر بواجهة مشهور:</b> تُستورد منتجاته (الاسم، الصورة، السعر، المخزون) وتتحدّث تلقائياً.<br>
-      🔑 مفتاح الـAPI لا يُكتب هنا: ضعه في Supabase ← Edge Functions ← Secrets باسم يبدأ بـ <b dir="ltr">PARTNER_</b> واكتب الاسم فقط هنا.</div></div>
+      <b>اربط متجر تاجر بواجهة مشهور:</b> تُستورد منتجاته (الاسم، الصورة، السعر، المخزون) وتتحدّث تلقائياً.<br>
+      مفتاح الـAPI لا يُكتب هنا: ضعه في Supabase ← Edge Functions ← Secrets باسم يبدأ بـ <b dir="ltr">PARTNER_</b> واكتب الاسم فقط هنا.</div></div>
     <div class="toolbar"><button class="sbtn pri" onclick="editPartner()">+ ربط تاجر</button>
-      ${data.length?'<button class="sbtn" onclick="syncAll()">🔄 مزامنة الكل</button>':''}
+      ${data.length?'<button class="sbtn" onclick="syncAll()">مزامنة الكل</button>':''}
       <span style="color:var(--muted);font-weight:700">${data.length} تاجر مربوط</span></div>
     ${!CELEBS.length?'<div class="empty">أضف مشهورًا أولاً من تبويب «المشاهير»</div>':''}
     ${data.map(p=>`<div class="card"><div class="hd"><span class="t">${esc(p.name)} ${p.active?'':'<span class="pill" style="background:#999">موقوف</span>'}</span>
         <span class="pill" style="background:#1f4e79">${PLAT[p.platform]||p.platform}</span></div>
-      <div class="s">⭐ ${esc(cname(p.celebrity_id))} · 🏷️ ${cnt(p.id)} منتج · ✖️ السعر ×${p.price_multiplier}${Number(p.markup_percent)?' + '+p.markup_percent+'%':''}<br>
-        🕒 آخر مزامنة: ${when(p.last_sync_at)} ${p.last_sync_status?`<span class="pill" style="background:${p.last_sync_status==='ok'?'#2E7D5B':'var(--danger)'}">${p.last_sync_status==='ok'?'ناجحة':'فشلت'}</span>`:''}<br>
+      <div class="s">${esc(cname(p.celebrity_id))} · ${cnt(p.id)} منتج · السعر ×${p.price_multiplier}${Number(p.markup_percent)?' + '+p.markup_percent+'%':''}<br>
+        آخر مزامنة: ${when(p.last_sync_at)} ${p.last_sync_status?`<span class="pill" style="background:${p.last_sync_status==='ok'?'#2E7D5B':'var(--danger)'}">${p.last_sync_status==='ok'?'ناجحة':'فشلت'}</span>`:''}<br>
         ${p.last_sync_message?`<span style="word-break:break-word">${esc(p.last_sync_message)}</span>`:''}</div>
-      <div class="acts"><button class="sbtn" onclick="testPartner('${p.id}')">🧪 اختبار</button>
-        <button class="sbtn pri" onclick="syncPartner('${p.id}')">🔄 مزامنة الآن</button>
-        <button class="sbtn" onclick="editPartner('${p.id}')">✏️ تعديل</button>
-        <button class="sbtn dan" onclick="delPartner('${p.id}')">🗑️ حذف</button></div></div>`).join('')
+      <div class="acts"><button class="sbtn" onclick="testPartner('${p.id}')">اختبار</button>
+        <button class="sbtn pri" onclick="syncPartner('${p.id}')">مزامنة الآن</button>
+        <button class="sbtn" onclick="editPartner('${p.id}')">تعديل</button>
+        <button class="sbtn dan" onclick="delPartner('${p.id}')">حذف</button></div></div>`).join('')
       || (CELEBS.length?'<div class="empty">لا يوجد تاجر مربوط بعد</div>':'')}
     ${logs?.length?`<h3 style="margin:18px 0 8px">سجل المزامنة</h3>${logs.map(l=>`<div class="card"><div class="s">
-      ${l.status==='ok'?'✅':l.status==='error'?'❌':'⏳'} <b>${esc((data.find(p=>p.id===l.partner_id)||{}).name||'')}</b> · ${when(l.started_at)}<br>${esc(l.message||'')}</div></div>`).join('')}`:''}`;
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${l.status==='ok'?'#2E7D5B':l.status==='error'?'#c0392b':'#b7791f'}"></span> <b>${esc((data.find(p=>p.id===l.partner_id)||{}).name||'')}</b> · ${when(l.started_at)}<br>${esc(l.message||'')}</div></div>`).join('')}`:''}`;
 }
 function editPartner(id){
   if(!CELEBS.length) return toast('أضف مشهورًا أولاً');
@@ -967,7 +967,7 @@ function editPartner(id){
     busy(true);
     const { error } = id ? await db.from('partners').update(row).eq('id',id) : await db.from('partners').insert(row);
     if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
-    closeSheet(); toast('تم الحفظ ✅ — اضغط «اختبار» للتأكد من الاتصال'); renderPartners();
+    closeSheet(); toast('تم الحفظ — اضغط «اختبار» للتأكد من الاتصال'); renderPartners();
   };
 }
 async function callSync(body){
@@ -977,28 +977,28 @@ async function callSync(body){
   return data;
 }
 async function testPartner(id){
-  toast('⏳ جارٍ الاتصال بمتجر التاجر...');
+  toast('جارٍ الاتصال بمتجر التاجر...');
   try{
     const r=await callSync({action:'test',id});
-    sheet(`<h3>🧪 نتيجة الاختبار</h3><p class="s">✅ الاتصال ناجح: وُجد <b>${r.count}</b> منتج صالح. أمثلة (لم يُحفظ شيء بعد):</p>
+    sheet(`<h3>نتيجة الاختبار</h3><p class="s">الاتصال ناجح: وُجد <b>${r.count}</b> منتج صالح. أمثلة (لم يُحفظ شيء بعد):</p>
       ${r.sample.map(i=>`<div class="card"><div class="hd" style="justify-content:flex-start;gap:12px">
-        ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb">🛍️</div>'}
+        ${i.image_url?`<img class="thumb" src="${esc(i.image_url)}" alt="">`:'<div class="thumb"><svg width="45%" height="45%" viewBox="0 0 24 24" fill="none" stroke="#9A9080" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>'}
         <div style="flex:1;min-width:0"><div class="t">${esc(i.name)}</div>
         <div class="s">سعر التاجر: ${esc(i.price)} ← في اشريلي: <b style="color:var(--brand)">${fmt(i.final_price)}</b> · المخزون: ${i.stock}${i.available?'':' · غير متوفر'}</div></div></div></div>`).join('')}
-      <button class="btn" onclick="closeSheet();syncPartner('${id}')">🔄 استورد المنتجات الآن</button>
+      <button class="btn" onclick="closeSheet();syncPartner('${id}')">استورد المنتجات الآن</button>
       <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إغلاق</button>`);
-  }catch(e){ reportError('testPartner: '+e.message); toast('❌ فشل الاختبار: '+e.message); }
+  }catch(e){ reportError('testPartner: '+e.message); toast('فشل الاختبار: '+e.message); }
 }
 async function syncPartner(id){
-  toast('⏳ جارٍ المزامنة... قد تأخذ دقيقة');
-  try{ const r=await callSync({action:'sync',id}); toast((r.ok?'✅ ':'❌ ')+r.message); }
-  catch(e){ reportError('syncPartner: '+e.message); toast('❌ '+e.message); }
+  toast('جارٍ المزامنة... قد تأخذ دقيقة');
+  try{ const r=await callSync({action:'sync',id}); toast(r.message); }
+  catch(e){ reportError('syncPartner: '+e.message); toast(''+e.message); }
   if(tab==='partners') renderPartners();
 }
 async function syncAll(){
-  toast('⏳ جارٍ مزامنة كل التجّار...');
-  try{ const r=await callSync({action:'sync_all'}); const bad=r.results.filter(x=>!x.ok).length; toast(bad?`❌ فشل ${bad} من ${r.results.length}`:`✅ تمت مزامنة ${r.results.length} تاجر`); }
-  catch(e){ toast('❌ '+e.message); }
+  toast('جارٍ مزامنة كل التجّار...');
+  try{ const r=await callSync({action:'sync_all'}); const bad=r.results.filter(x=>!x.ok).length; toast(bad?`فشل ${bad} من ${r.results.length}`:`تمت مزامنة ${r.results.length} تاجر`); }
+  catch(e){ toast(''+e.message); }
   renderPartners();
 }
 function delPartner(id){
@@ -1019,7 +1019,7 @@ async function reviewP(id, ok, catId){
       sheet(`<h3>موافقة على «${esc(lp.name)}»</h3>
         <p class="hint">وجدت في الكتالوج منتجات مشابهة. إذا كان نفس المنتج، اربطه بها حتى لا يتكرر، وإلا أنشئ بطاقة جديدة.</p>
         ${sim.map(x=>`<button class="btn" style="background:var(--bg);color:var(--ink);margin-top:8px" onclick="closeSheet();reviewP('${id}',true,'${x.id}')"><span dir="ltr" style="font-family:monospace">${esc(x.code)}</span> · ${esc(x.name)}${x.brand?' · '+esc(x.brand):''}</button>`).join('')}
-        <button class="btn" style="margin-top:12px" onclick="closeSheet();reviewP('${id}',true,null)">➕ منتج جديد في الكتالوج</button>
+        <button class="btn" style="margin-top:12px" onclick="closeSheet();reviewP('${id}',true,null)">منتج جديد في الكتالوج</button>
         <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
       return;
     }
@@ -1027,7 +1027,7 @@ async function reviewP(id, ok, catId){
   if(ok){
     const { error } = await db.rpc('review_product',{p_id:id,p_approve:true,p_note:null,p_catalog:catId||null});
     if(error) return toast('تعذّر: '+error.message);
-    toast('تمت الموافقة ✅ وأصبح ظاهراً للزبائن'); return renderProducts();
+    toast('تمت الموافقة وأصبح ظاهراً للزبائن'); return renderProducts();
   }
   sheet(`<h3>سبب الرفض</h3><p class="hint">يظهر للمشهور ليصحّح منتجه.</p>
     <textarea id="rNote" placeholder="مثال: الصورة غير واضحة، أو السعر غير صحيح"></textarea>
@@ -1052,8 +1052,8 @@ function celebAccount(cid){
     const body={action:'create_celebrity',celebrity_id:cid,phone:$('cPhone').value.trim(),password:$('cPw').value};
     if(!/^\d{8}$/.test(body.phone)) return toast('رقم الهاتف يجب أن يكون 8 أرقام');
     if(body.password.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
-    const b=$('saveBtn'); b.disabled=true; b.textContent='⏳ جارٍ الإنشاء...';
-    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب المشهور ✅'); renderCelebs(); }
+    const b=$('saveBtn'); b.disabled=true; b.textContent='جارٍ الإنشاء...';
+    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب المشهور'); renderCelebs(); }
     catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
   };
 }
@@ -1078,36 +1078,36 @@ async function renderProfit(){
     <div class="toolbar"><select class="grow" onchange="profitPeriod=this.value;go('profit')">
       ${opts.map(([k,l])=>`<option value="${k}" ${k===profitPeriod?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="stats">
-      <div class="stat"><div class="k">💰 ربحك (عمولة اشريلي + توصيل)</div><div class="v" style="color:#2E7D5B">${fmt(com+sh)}</div></div>
+      <div class="stat"><div class="k">ربحك (عمولة اشريلي + توصيل)</div><div class="v" style="color:#2E7D5B">${fmt(com+sh)}</div></div>
       <div class="stat"><div class="k">مبيعات المنتجات (مُسلَّمة)</div><div class="v">${fmt(gross)}</div></div>
       <div class="stat"><div class="k">عمولة اشريلي</div><div class="v">${fmt(com)}</div></div>
       <div class="stat"><div class="k">دخل التوصيل</div><div class="v">${fmt(sh)}</div></div>
-      <div class="stat"><div class="k">⭐ مستحق للمؤثّرين</div><div class="v" style="color:#6b3fa0">${fmt(infl)}</div></div>
-      <div class="stat"><div class="k">🏪 مستحق للمورّدين</div><div class="v" style="color:#b7791f">${fmt(sup)}</div></div>
+      <div class="stat"><div class="k">مستحق للمؤثّرين</div><div class="v" style="color:#6b3fa0">${fmt(infl)}</div></div>
+      <div class="stat"><div class="k">مستحق للمورّدين</div><div class="v" style="color:#b7791f">${fmt(sup)}</div></div>
     </div>
-    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">⚖️ كل بيع يُقسَّم: <b>المؤثّر</b> نسبته (افتراضياً 5%) + <b>اشريلي</b> نسبته من المورّد (افتراضياً 5%) + <b>الباقي للمورّد</b>. تغيّر النسب من ⭐ المشاهير و🏪 التجّار.</div></div>
+    <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">كل بيع يُقسَّم: <b>المؤثّر</b> نسبته (افتراضياً 5%) + <b>اشريلي</b> نسبته من المورّد (افتراضياً 5%) + <b>الباقي للمورّد</b>. تغيّر النسب من المشاهير والتجّار.</div></div>
     <h3 style="margin:18px 0 8px">حسب المؤثّر (الواجهة)</h3>
     ${rows.map(r=>`<div class="card"><div class="hd"><span class="t">${esc(r.celebrity_name||'—')}</span><span class="t">${fmt(r.gross)}</span></div>
-      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة<br>⭐ للمؤثّر: <b>${fmt(r.influencer_due)}</b> · 💰 لاشريلي: <b style="color:#2E7D5B">${fmt(r.platform)}</b> · 🏪 للمورّدين: ${fmt(r.supplier_due)}</div></div>`).join('')
+      <div class="s">${r.orders} طلب · ${r.items} قطعة<br>للمؤثّر: <b>${fmt(r.influencer_due)}</b> · لاشريلي: <b style="color:#2E7D5B">${fmt(r.platform)}</b> · للمورّدين: ${fmt(r.supplier_due)}</div></div>`).join('')
       || '<div class="empty">لا توجد طلبات مُسلَّمة في هذه الفترة</div>'}
     <h3 style="margin:18px 0 8px">حسب المخزون (اشريلي · المشهور · التاجر)</h3>
     <div class="stats">${['chrili','star','merchant'].map(t=>{ const rs=(bySup.data||[]).filter(r=>r.stock_type===t), g=k=>rs.reduce((a,r)=>a+Number(r[k]||0),0);
       return `<div class="stat"><div class="k">${stk(t).o}) ${stk(t).i} ${stk(t).l}</div><div class="v" style="color:${stk(t).c}">${fmt(g('delivered_gross'))}</div>
-        <div class="k" style="margin-top:4px">${t==='chrili'?'💰 لاشريلي (ثمن البضاعة)':t==='star'?'⭐ للمشاهير (ثمن بضاعتهم)':'🏪 للتجّار'}: ${fmt(g('supplier_due'))}</div></div>`; }).join('')}</div>
+        <div class="k" style="margin-top:4px">${t==='chrili'?'لاشريلي (ثمن البضاعة)':t==='star'?'للمشاهير (ثمن بضاعتهم)':'للتجّار'}: ${fmt(g('supplier_due'))}</div></div>`; }).join('')}</div>
     <p class="s" style="margin-bottom:6px">ما بيع من عند كل مورّد ومن كم واجهة، وحصّته بعد عمولة المؤثّر وعمولة اشريلي (الطلبات المسلَّمة).</p>
     ${(bySup.data||[]).map(r=>`<div class="card"><div class="hd"><span class="t">${stk(r.stock_type).i} <span dir="ltr" style="font-family:monospace">${esc(r.supplier_code)}</span> · ${esc(r.supplier_name)}</span><span class="t">${fmt(r.gross)}</span></div>
-      <div class="s">🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ من ${r.influencers} واجهة · عمولة اشريلي ${Number(r.platform_percent)}%<br>مسلَّم ${fmt(r.delivered_gross)} ← 🏪 تدفع له: <b>${fmt(r.supplier_due)}</b> · ⭐ للمؤثّرين ${fmt(r.influencer_due)} · 💰 لاشريلي ${fmt(r.platform)}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
+      <div class="s">${r.orders} طلب · ${r.items} قطعة · من ${r.influencers} واجهة · عمولة اشريلي ${Number(r.platform_percent)}%<br>مسلَّم ${fmt(r.delivered_gross)} ← تدفع له: <b>${fmt(r.supplier_due)}</b> · للمؤثّرين ${fmt(r.influencer_due)} · لاشريلي ${fmt(r.platform)}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <h3 style="margin:18px 0 8px">حسب المرجع (مورّد + منتج)</h3>
     <p class="s" style="margin-bottom:6px">كل الطلبات غير الملغاة في الفترة، مع المخزون المتبقي عند المورّد.</p>
     ${(byRef.data||[]).filter(r=>Number(r.items)>0).map(r=>`<div class="card"><div class="hd"><span class="t" dir="ltr" style="font-family:monospace">${esc(r.ref_code)}</span><span class="t">${fmt(r.gross)}</span></div>
-      <div class="s">${esc(r.product_name)} · 🏪 ${esc(r.supplier_name)}<br>🧾 ${r.orders} طلب · ${r.items} قطعة · ⭐ ${r.influencers} مؤثّر · 📦 باقٍ ${r.stock_left}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
+      <div class="s">${esc(r.product_name)} · ${esc(r.supplier_name)}<br>${r.orders} طلب · ${r.items} قطعة · ${r.influencers} مؤثّر · باقٍ ${r.stock_left}</div></div>`).join('') || '<div class="empty">لا مبيعات في هذه الفترة</div>'}
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
-      📌 تُحسب الأرباح على الطلبات بحالة <b>«تم التوصيل»</b> فقط. النسب تُحفظ مع كل طلب لحظة الشراء، فتغييرها لاحقاً لا يغيّر الحسابات السابقة.<br>
-      ⚠️ لا تشمل مصاريفك (أجرة الموصّل، الإعلانات، الاشتراكات): اطرحها لتعرف الربح الصافي.</div></div>`;
+      تُحسب الأرباح على الطلبات بحالة <b>«تم التوصيل»</b> فقط. النسب تُحفظ مع كل طلب لحظة الشراء، فتغييرها لاحقاً لا يغيّر الحسابات السابقة.<br>
+      لا تشمل مصاريفك (أجرة الموصّل، الإعلانات، الاشتراكات): اطرحها لتعرف الربح الصافي.</div></div>`;
 }
 let MERCHANTS=[];
 /* أنواع المخزون بالترتيب: 1) اشريلي  2) المشهور  3) التاجر */
-const STK={ chrili:{i:'🟢',l:'مخزون اشريلي',o:1,c:'#2E7D5B'}, star:{i:'⭐',l:'مخزون المشهور',o:2,c:'#6b3fa0'}, merchant:{i:'🏪',l:'مخزون التاجر',o:3,c:'#b7791f'} };
+const STK={ chrili:{i:'FC',l:'مخزون اشريلي',o:1,c:'#2E7D5B'}, star:{i:'FI',l:'مخزون المشهور',o:2,c:'#6b3fa0'}, merchant:{i:'FF',l:'مخزون التاجر',o:3,c:'#b7791f'} };
 const stk=t=>STK[t]||STK.merchant;
 const stkPill=t=>`<span class="pill" style="background:${stk(t).c}">${stk(t).i} ${stk(t).l}</span>`;
 async function loadMerchants(){
@@ -1121,15 +1121,15 @@ async function starStock(cid){
   const { data, error } = await db.rpc('ensure_star_stock',{ p_celeb:cid });
   if(error) return toast('تعذّر: '+error.message);
   await loadMerchants(); const m=MERCHANTS.find(x=>x.id===data);
-  toast('⭐ مخزون المشهور جاهز: '+(m?m.code:'')+' — أضف بضاعته من الكتالوج «+ مرجع» واختر هذا المخزون');
+  toast('مخزون المشهور جاهز: '+(m?m.code:'')+' — أضف بضاعته من الكتالوج «+ مرجع» واختر هذا المخزون');
 }
 function addChriliStock(){
-  sheet(`<h3>🟢 مستودع اشريلي جديد</h3><label>الاسم</label><input class="field" id="mName" placeholder="مثلاً: مستودع تفرغ زينة">
+  sheet(`<h3>مستودع اشريلي جديد</h3><label>الاسم</label><input class="field" id="mName" placeholder="مثلاً: مستودع تفرغ زينة">
     <button class="btn" id="saveBtn">إنشاء</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{ const name=$('mName').value.trim(); if(name.length<2) return toast('أدخل الاسم');
     busy(true); const { error }=await db.from('merchants').insert({ name, stock_type:'chrili' });
-    if(error){ busy(false); return toast('تعذّر: '+error.message); } closeSheet(); toast('تم ✅'); renderPartners(); };
+    if(error){ busy(false); return toast('تعذّر: '+error.message); } closeSheet(); toast('تم'); renderPartners(); };
 }
 function addMerchant(){
   sheet(`<h3>حساب تاجر جديد</h3>
@@ -1144,8 +1144,8 @@ function addMerchant(){
     if(body.name.length<2) return toast('أدخل اسم التاجر');
     if(!/^\d{8}$/.test(body.phone)) return toast('رقم الهاتف يجب أن يكون 8 أرقام');
     if(body.password.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
-    const b=$('saveBtn'); b.disabled=true; b.textContent='⏳ جارٍ الإنشاء...';
-    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب التاجر ✅'); renderPartners(); }
+    const b=$('saveBtn'); b.disabled=true; b.textContent='جارٍ الإنشاء...';
+    try{ await callAdmin(body); closeSheet(); toast('تم إنشاء حساب التاجر'); renderPartners(); }
     catch(e){ b.disabled=false; b.textContent='إنشاء الحساب'; toast('تعذّر الإنشاء: '+e.message); }
   };
 }
@@ -1160,7 +1160,7 @@ function renameMerchant(id){
     const platform_percent=Number($('mPct').value.replace(',','.')); if(!(platform_percent>=0&&platform_percent<=100)) return toast('النسبة بين 0 و100%');
     busy(true); const { error } = await db.from('merchants').update({name, platform_percent}).eq('id',id);
     if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
-    closeSheet(); toast('تم الحفظ ✅'); renderPartners();
+    closeSheet(); toast('تم الحفظ'); renderPartners();
   };
 }
 function resetMerchantPw(id){
@@ -1172,7 +1172,7 @@ function resetMerchantPw(id){
   $('saveBtn').onclick=async()=>{
     const pw=$('rPw').value; if(pw.length<6) return toast('كلمة المرور 6 أحرف على الأقل');
     busy(true);
-    try{ await callAdmin({ action:'set_password', id:m.user_id, password:pw }); closeSheet(); toast('تم تغيير كلمة المرور ✅'); }
+    try{ await callAdmin({ action:'set_password', id:m.user_id, password:pw }); closeSheet(); toast('تم تغيير كلمة المرور'); }
     catch(e){ busy(false); toast('تعذّر التغيير: '+e.message); }
   };
 }
@@ -1180,7 +1180,7 @@ function toggleMerchant(id,val){
   confirmBox(val?'تفعيل حساب هذا التاجر؟':'إيقاف حساب هذا التاجر؟ لن يستطيع رؤية الطلبات حتى تعيد تفعيله.', async()=>{
     const { error } = await db.from('merchants').update({active:val}).eq('id',id);
     if(error) return toast('تعذّر التحديث: '+error.message);
-    toast(val?'تم التفعيل ✅':'تم الإيقاف'); renderPartners();
+    toast(val?'تم التفعيل':'تم الإيقاف'); renderPartners();
   });
 }
 
@@ -1198,18 +1198,18 @@ async function renderErrors(){
   const when=d=>new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'});
   $('main').innerHTML=`
     <div class="toolbar"><span style="font-weight:800;font-size:17px">${data.length} خطأ مسجّل · ${list.length} نوع</span>
-      ${data.length?'<button class="sbtn dan" onclick="clearErrors()">🗑️ حذف الكل</button>':''}
-      <button class="sbtn" onclick="go('errors')">🔄 تحديث</button></div>
+      ${data.length?'<button class="sbtn dan" onclick="clearErrors()">حذف الكل</button>':''}
+      <button class="sbtn" onclick="go('errors')">تحديث</button></div>
     <div class="card" style="background:#F4ECDB"><div class="s" style="color:var(--ink)">
       هنا تظهر الأخطاء التي تحدث عند الزبائن أو في لوحة التحكم تلقائياً. أرسل صورة هذه الصفحة إلى Claude ليصلحها.</div></div>
     ${list.map(g=>`<div class="card">
       <div class="hd"><span class="t" style="word-break:break-word">${esc(g.message)}</span>
         <span class="pill" style="background:${g.count>5?'var(--danger)':'#b7791f'}">${g.count}×</span></div>
-      <div class="s">📱 ${g.app==='shop'?'التطبيق':'لوحة التحكم'} · 👥 ${g.users.size} مستخدم · آخر مرة: ${when(g.created_at)} · أول مرة: ${when(g.first)}<br>
-      📄 ${esc(g.page||'')}${g.source?' · '+esc(String(g.source).split('/').pop())+(g.line?':'+g.line:''):''}<br>
+      <div class="s">${g.app==='shop'?'التطبيق':'لوحة التحكم'} · ${g.users.size} مستخدم · آخر مرة: ${when(g.created_at)} · أول مرة: ${when(g.first)}<br>
+      ${esc(g.page||'')}${g.source?' · '+esc(String(g.source).split('/').pop())+(g.line?':'+g.line:''):''}<br>
       <span style="font-size:12px">${esc((g.user_agent||'').slice(0,90))}</span></div>
       ${g.stack?`<details style="margin-top:6px"><summary class="s" style="cursor:pointer">التفاصيل التقنية</summary><pre dir="ltr" style="white-space:pre-wrap;font-size:11.5px;background:var(--bg);padding:8px;border-radius:8px">${esc(g.stack)}</pre></details>`:''}
-    </div>`).join('') || '<div class="empty">🎉 لا توجد أخطاء</div>'}`;
+    </div>`).join('') || '<div class="empty">لا توجد أخطاء</div>'}`;
 }
 function clearErrors(){
   confirmBox('حذف كل الأخطاء المسجّلة؟', async()=>{
@@ -1246,10 +1246,10 @@ async function restudioAll(){
     db.from('catalog_products').select('id,image_url').not('image_url','is',null),
     db.from('products').select('id,image_url,offer_id').is('offer_id',null).not('image_url','is',null)]);
   const jobs=[...(cp.data||[]).map(r=>['catalog_products',r]), ...(lp.data||[]).map(r=>['products',r])].filter(([,r])=>!isDone(r.image_url));
-  if(!jobs.length) return toast('كل الصور موحّدة بالفعل ✅');
+  if(!jobs.length) return toast('كل الصور موحّدة بالفعل');
   let ok=0, bad=0;
   for(const [t,r] of jobs){
-    toast(`🎨 ${ok+bad+1} / ${jobs.length} ...`);
+    toast(`${ok+bad+1} / ${jobs.length} ...`);
     try{
       const blob=await ChriliStudio.studioize(r.image_url+(r.image_url.includes('?')?'&':'?')+'t='+Date.now());
       const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}-st.jpg`;
@@ -1259,7 +1259,7 @@ async function restudioAll(){
       ok++;
     }catch(e){ console.log('restudio', r.id, e); bad++; }
   }
-  toast(`✅ تم توحيد ${ok} صورة${bad?` · تعذّر ${bad}`:''}`);
+  toast(`تم توحيد ${ok} صورة${bad?` · تعذّر ${bad}`:''}`);
   renderCatalog();
 }
 
@@ -1293,7 +1293,7 @@ function delRow(table,id){
 }
 function sheet(html){ $('sheetRoot').innerHTML=`<div class="sheet-bg"><div class="sheet">${html}</div></div>`; }
 function closeSheet(){ $('sheetRoot').innerHTML=''; }
-function busy(on){ const b=$('saveBtn'); if(b){ b.disabled=on; b.textContent=on?'⏳ جارٍ الحفظ...':'حفظ'; } }
+function busy(on){ const b=$('saveBtn'); if(b){ b.disabled=on; b.textContent=on?'جارٍ الحفظ...':'حفظ'; } }
 let tt; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2600); }
 function confirmBox(msg,ok){
   const r=$('modalRoot');

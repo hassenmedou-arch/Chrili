@@ -104,10 +104,13 @@
   };
   Object.assign(FR, {"واجهات المشاهير": "Vitrines des stars", "ما يختاره مشهورك، يصلك إلى البيت": "Ce que votre star choisit, livré chez vous", "تصفية": "Filtrer", "المفضّلة فقط": "Favoris uniquement", "حذف حسابي": "Supprimer mon compte", "حذف الحساب نهائياً": "Supprimer le compte définitivement", "تم استلام طلبك": "Commande reçue", "مجاني": "Gratuite", "إتمام الطلب": "Commander", "جارٍ التحميل": "Chargement", "ابحث عن مشهور أو منتج": "Rechercher une star ou un produit", "رتّب": "Trier"});
   if (window.CHRILI_FR_EXTRA) Object.assign(FR, window.CHRILI_FR_EXTRA);
+  Object.assign(FR, {"نظرة عامة":"Vue d’ensemble","الإعدادات":"Paramètres","التوصيل":"Livraison","فتح الحسابات":"Création des comptes","لحظة...":"Un instant..."});
+  (function(){ const EM=/[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{2714}\u{2716}-\u{27BF}\u{2B00}-\u{2BFF}]️?\s?/gu;
+    Object.keys(FR).forEach(k=>{ const k2=k.replace(EM,'').trim(); if(k2&&k2!==k&&!(k2 in FR)) FR[k2]=String(FR[k]).replace(EM,'').trim(); }); })();
   const PATTERNS = [
     [/^مرحباً (.+?) 👋$/, 'Bonjour $1 👋'],
-    [/⏳ بانتظار تأكيد الرقم \((\d+)\)/g, '⏳ Numéros à confirmer ($1)'],
-    [/📂 الأقسام \((\d+) رئيسي · (\d+) فرعي\)/g, '📂 Rayons ($1 principaux · $2 sous-rayons)'],
+    [/(?:⏳ )?بانتظار تأكيد الرقم \((\d+)\)/g, 'Numéros à confirmer ($1)'],
+    [/(?:📂 )?الأقسام \((\d+) رئيسي · (\d+) فرعي\)/g, 'Rayons ($1 principaux · $2 sous-rayons)'],
     [/(\d[\d\s,.]*) أوقية/g, '$1 MRU'],
     [/(\d+) طلب/g, '$1 commande(s)'],
     [/^مرحبًا (.+?) 👋$/, 'Bonjour $1 👋'],
