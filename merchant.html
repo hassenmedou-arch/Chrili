@@ -105,6 +105,7 @@ label{font-weight:500}
 .note{border-radius:12px}
 .hello{margin:16px 0 4px}
 .wrap{padding:0 16px 64px}
+.aibtn{display:inline-flex;align-items:center;gap:8px;margin:8px 0 4px;height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(15,92,77,.3);background:#E8F0EC;color:#0F5C4D;font:inherit;font-size:14px;font-weight:500;cursor:pointer}.aibtn:disabled{opacity:.6}
 </style>
 </head>
 <body>
@@ -157,6 +158,7 @@ label{font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="studio.js"></script>
 <script src="dupcheck.js"></script>
+<script src="ai.js"></script>
 <script>
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
@@ -332,13 +334,14 @@ function editP(id){
   sheet(`<h3>${id ? 'تعديل منتج' : 'منتج جديد'}</h3>
     ${p.pending_changes ? '<p class="hint">تظهر هنا تعديلاتك التي تنتظر الموافقة.</p>' : ''}
     <label>اسم المنتج</label><input class="field" id="fName" value="${esc(v('name'))}">
-    <label>الوصف</label><textarea class="field" id="fDesc">${esc(v('description') || '')}</textarea>
+    <label>الوصف</label>${aiButton()}<textarea class="field" id="fDesc">${esc(v('description') || '')}</textarea>
     <label>السعر بالأوقية</label><input class="field" id="fPrice" inputmode="decimal" value="${esc(v('price'))}">
     <label>الكمية المتوفرة</label><input class="field" id="fStock" inputmode="numeric" value="${esc(p.stock)}">
     <label>صورة المنتج</label><input class="field" id="fImg" type="file" accept="image/*">
     ${v('image_url') ? `<img class="preview" src="${esc(v('image_url'))}" alt="">` : ''}
     <button class="btn" id="saveBtn">${id ? 'حفظ' : 'إرسال للمراجعة'}</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  AI_OPTS={db, desc:'fDesc', name:'fName', fileInput:'fImg', imageUrl:v('image_url')||'', toast};
   $('saveBtn').onclick = async () => {
     const name = $('fName').value.trim(), desc = $('fDesc').value.trim();
     const price = Number($('fPrice').value.replace(',', '.')), stock = parseInt($('fStock').value, 10);

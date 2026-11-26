@@ -1,5 +1,5 @@
 // اشريلي — عامل الخدمة: يحفظ واجهة التطبيق ليفتح بسرعة، ولا يحفظ بيانات Supabase
-const CACHE = 'chrili-v41';
+const CACHE = 'chrili-v42';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -20,4 +20,21 @@ self.addEventListener('fetch', e => {
       return res;
     }).catch(() => caches.match(e.request).then(r => r || caches.match('./index.html')))
   );
+});
+
+// إشعارات الهاتف
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'اشريلي', {
+    body: d.body || '', icon: './icon-192.png', badge: './icon-192.png', tag: d.tag || 'chrili',
+    data: { url: d.url || './' }, dir: 'auto', renotify: !!d.tag,
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ('navigate' in c) { c.focus(); return c.navigate(url); } }
+    return self.clients.openWindow(url);
+  }));
 });

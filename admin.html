@@ -174,6 +174,7 @@ label{font-weight:500}
 
 .tabbar button,.tabs button{font-weight:500}
 [class*="card"],.stat,.box,.tile{box-shadow:var(--shadow)}
+.aibtn{display:inline-flex;align-items:center;gap:8px;margin:8px 0 4px;height:36px;padding:0 12px;border-radius:12px;border:1px solid rgba(15,92,77,.3);background:#E8F0EC;color:#0F5C4D;font:inherit;font-size:14px;font-weight:500;cursor:pointer}.aibtn:disabled{opacity:.6}
 </style>
 
 <!-- ===== شاشة التحميل ===== -->
@@ -238,6 +239,7 @@ label{font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="studio.js"></script>
 <script src="dupcheck.js"></script>
+<script src="ai.js"></script>
 <script>
 const SUPABASE_URL = 'https://soutfsbptogvhcjutdxo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VTNKZA6xE9jGqQvCDk4yow_2tn5uvqu';
@@ -276,6 +278,8 @@ const fmt = n => Number(n||0).toLocaleString('fr-FR') + ' أوقية';
 const day = d => new Date(d).toLocaleDateString('fr-FR');
 const STATUS = { new:['جديد','#d9a441'], confirmed:['مؤكَّد','#1f4e79'], delivered:['تم التوصيل','#2E7D5B'], cancelled:['ملغى','#c0392b'] };
 const pill = s => { const x=STATUS[s]||[s,'#666']; return `<span class="pill" style="background:${x[1]}">${x[0]}</span>`; };
+/* إشعار الزبائن على هواتفهم — لا يوقف العمل إذا فشل */
+const notify = body => db.functions.invoke('push',{body}).catch(()=>{});
 const shortId = id => id.slice(0,8).toUpperCase();
 
 /* ================== الدخول ================== */
@@ -415,6 +419,7 @@ async function setStatus(id,s){
   const { error } = await db.from('orders').update({status:s}).eq('id',id);
   if(error) return toast('تعذّر التحديث: '+error.message);
   toast('تم تحديث حالة الطلب'); go('orders');
+  notify({action:'order', order_id:id});
 }
 
 /* ================== المنتجات ================== */
@@ -474,7 +479,7 @@ function editProduct(id){
     <label>اسم المنتج</label><input class="field" id="fName" value="${esc(p.name)}">
     <label>المخزون (صاحب البضاعة)</label>
     <select id="fMerch"><option value="">— تلقائي: مخزون المشهور إن وُجد، وإلا مخزون اشريلي —</option>${supOptions(p.merchant_id)}</select>
-    <label>الوصف (اختياري)</label><textarea id="fDesc">${esc(p.description||'')}</textarea>
+    <label>الوصف (اختياري)</label>${aiButton()}<textarea id="fDesc">${esc(p.description||'')}</textarea>
     <label>السعر بالأوقية</label><input class="field" id="fPrice" inputmode="decimal" value="${esc(p.price)}">
     <label>الكمية المتوفرة</label><input class="field" id="fStock" inputmode="numeric" value="${esc(p.stock)}">
     <label>صورة المنتج</label><input class="field" id="fImg" type="file" accept="image/*">
@@ -482,6 +487,7 @@ function editProduct(id){
     <label class="chk"><input type="checkbox" id="fActive" ${p.active?'checked':''}> ظاهر للزبائن</label>
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
+  AI_OPTS={db, desc:'fDesc', name:'fName', fileInput:'fImg', imageUrl:p.image_url||'', toast};
   $('saveBtn').onclick=async()=>{
     const row={ celebrity_id:$('fCeleb').value, name:$('fName').value.trim(), description:$('fDesc').value.trim()||null,
       price:Number($('fPrice').value.replace(',','.')), stock:parseInt($('fStock').value,10), active:$('fActive').checked,
@@ -586,7 +592,7 @@ function editCatProd(id){
     <label>الماركة (اختياري)</label><input class="field" id="kBrand" value="${esc(p.brand||'')}">
     <label>القسم</label><select id="kCat"><option value="">— اختر القسم —</option>${catOptions(p.category_id)}</select>
     <label>الباركود (اختياري، يمنع التكرار)</label><input class="field" id="kBar" dir="ltr" value="${esc(p.barcode||'')}">
-    <label>الوصف</label><textarea id="kDesc">${esc(p.description||'')}</textarea>
+    <label>الوصف</label>${aiButton()}<textarea id="kDesc">${esc(p.description||'')}</textarea>
     <label>الصورة</label><input class="field" id="kImg" type="file" accept="image/*">
     ${p.image_url?`<img class="preview" src="${esc(p.image_url)}" alt="">`:''}
     <label class="chk"><input type="checkbox" id="kAct" ${p.active?'checked':''}> منتج نشط</label>
@@ -594,6 +600,7 @@ function editCatProd(id){
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   let confirmed=!!id;
+  AI_OPTS={db, desc:'kDesc', name:'kName', brand:'kBrand', category:()=>{const o=$('kCat'); return o&&o.selectedIndex>0?o.options[o.selectedIndex].text:'';}, fileInput:'kImg', imageUrl:p.image_url||'', toast};
   $('saveBtn').onclick=async()=>{
     const row={ name:$('kName').value.trim(), brand:$('kBrand').value.trim()||null, category_id:$('kCat').value||null,
       barcode:$('kBar').value.trim()||null, description:$('kDesc').value.trim()||null, active:$('kAct').checked };
@@ -668,7 +675,8 @@ function assignOffer(oid){
     const pr=$('aPrice').value.trim(); const price=pr===''?null:Number(pr.replace(',','.'));
     if(price!==null && !(price>0)) return toast('السعر غير صحيح');
     busy(true);
-    const { error } = await db.from('products').insert({ celebrity_id:$('aCeleb').value, offer_id:oid, price, active:true, review_status:'approved' });
+    const { data:ins, error } = await db.from('products').insert({ celebrity_id:$('aCeleb').value, offer_id:oid, price, active:true, review_status:'approved' }).select('id').maybeSingle();
+    if(!error && ins) notify({action:'new_product', product_id:ins.id});
     if(error){ busy(false); return toast('تعذّر الحفظ: '+error.message); }
     closeSheet(); toast('أصبح المنتج ظاهراً عند المؤثّر'); renderCatalog();
   };
@@ -1027,7 +1035,7 @@ async function reviewP(id, ok, catId){
   if(ok){
     const { error } = await db.rpc('review_product',{p_id:id,p_approve:true,p_note:null,p_catalog:catId||null});
     if(error) return toast('تعذّر: '+error.message);
-    toast('تمت الموافقة وأصبح ظاهراً للزبائن'); return renderProducts();
+    toast('تمت الموافقة وأصبح ظاهراً للزبائن'); notify({action:'new_product', product_id:id}); return renderProducts();
   }
   sheet(`<h3>سبب الرفض</h3><p class="hint">يظهر للمشهور ليصحّح منتجه.</p>
     <textarea id="rNote" placeholder="مثال: الصورة غير واضحة، أو السعر غير صحيح"></textarea>

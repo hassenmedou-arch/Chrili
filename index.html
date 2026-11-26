@@ -310,6 +310,19 @@ h1,h2,h3,h4,.hello,.section-t,.sh h3{line-height:1.4}
 .done h2{font-weight:600}
 .toast{border-radius:12px;font-weight:500}
 .modal{border-radius:20px;padding:24px}
+.follow{margin-top:12px;height:36px;padding:0 16px;border-radius:12px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font:inherit;font-size:14px;font-weight:500}
+.follow.on{background:var(--gold);border-color:var(--gold);color:#1C2421}
+.shead .shr,[dir=ltr] .shead .shr{top:12px;bottom:auto;left:12px;right:auto;z-index:5;background:rgba(20,24,22,.55);color:#fff}
+[dir=ltr] .shead .shr{left:auto;right:16px}
+.row .follow{margin-top:0;color:var(--brand);border-color:var(--brand)}
+.row .follow.on{color:#1C2421}
+.sim-t{font-size:16px;font-weight:600;margin:24px 0 12px}
+.sim{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.sim button{flex:0 0 120px;text-align:start;background:none;border:0;padding:0;font:inherit;color:var(--ink)}
+.sim .im{width:120px;height:120px;border-radius:12px;background:var(--tile);overflow:hidden;display:grid;place-items:center}
+.sim .im img{width:100%;height:100%;object-fit:cover}
+.sim .nm{font-size:13px;margin-top:8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sim .pr{font-size:13px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -634,7 +647,8 @@ async function onSignedIn(user){
     let seen=false; try{ seen=!!sessionStorage.getItem('vshown_'+user.id); sessionStorage.setItem('vshown_'+user.id,'1'); }catch(e){}
     if(!seen) setTimeout(()=>sheetOpen(verifySheetHtml(prof.verify_code, prof.phone)),400);
   }
-  if(ok){ const sc=new URLSearchParams(location.search).get('c'); if(sc && C(sc)) go('store',sc); else go('home'); }
+  if(ok){ const qs=new URLSearchParams(location.search), sc=qs.get('c'); if(sc && C(sc)) go('store',sc); else if(qs.get('v')==='orders') go('orders'); else go('home'); }
+  loadFollows();
 }
 
 function onSignedOut(){
@@ -772,7 +786,8 @@ function renderStore(id){
     <div class="shead">
       <button class="shr" onclick="shareStore('${c.id}')" aria-label="مشاركة">⤴</button>
       <div><div class="nm">${esc(c.name)} <span class="verified"></span></div>
-        <div class="sub"><span data-raw>${esc(c.bio||'')}</span><br>${c.followers?esc(c.followers)+' متابع · ':''}${all.length} منتج</div></div>
+        <div class="sub"><span data-raw>${esc(c.bio||'')}</span><br>${c.followers?esc(c.followers)+' متابع · ':''}${all.length} منتج</div>
+        <button class="follow ${FOLLOWS.has(c.id)?'on':''}" onclick="toggleFollow('${c.id}',this)">${FOLLOWS.has(c.id)?'تتابعه':'متابعة'}</button></div>
       <div class="ph">${c.avatar_url?`<img src="${esc(c.avatar_url)}" alt="">`:`<div style="font-size:70px;margin-bottom:20px">${emojiOf(c)}</div>`}</div>
     </div>
     <div class="sbar"><button onclick="sortSheet()"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4v16M4 8l4-4 4 4M16 20V4M12 16l4 4 4-4"/></svg> رتّب</button><button onclick="filterSheet()"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg> تصفية${active?'<span class="dot"></span>':''}</button></div>
@@ -836,6 +851,16 @@ function refreshView(){
   else if(!document.getElementById('vCats').classList.contains('hidden')) renderCats();
 }
 function buyNow(id){ const p=P(id); if(!(cart[id]>0)){ if(p.stock<=0) return toast('نفدت الكمية'); cart[id]=1; saveCart(); } closeSheet(); go('cart'); }
+/* اقتراحات «قد يعجبك أيضاً»: نفس القسم ثم نفس الماركة ثم نفس المشهور، المتوفّر فقط */
+function similarHtml(p){
+  const score=q=>(q.category&&q.category===p.category?3:0)+(q.brand&&q.brand===p.brand?2:0)+(q.celebrity_id===p.celebrity_id?1:0);
+  const list=PRODUCTS.filter(q=>q.id!==p.id && q.stock>0 && C(q.celebrity_id) && score(q)>0)
+    .sort((a,b)=>score(b)-score(a)||new Date(b.created_at)-new Date(a.created_at)).slice(0,8);
+  if(!list.length) return '';
+  return `<h4 class="sim-t">قد يعجبك أيضاً</h4><div class="sim">${list.map(q=>`<button onclick="openProd('${q.id}')">
+    <div class="im">${q.image_url?`<img src="${esc(q.image_url)}" alt="" loading="lazy">`:emojiOf(C(q.celebrity_id))}</div>
+    <div class="nm">${esc(q.name)}</div><div class="pr">${Number(q.price).toLocaleString('fr-FR')} MRU</div></button>`).join('')}</div>`;
+}
 async function openProd(id){
   const p=P(id); if(!p) return;
   if(p.description===undefined){ p.description=null; try{ const { data } = await db.from('products').select('description').eq('id',id).maybeSingle(); p.description=data?.description||null; }catch(e){} }
@@ -854,7 +879,54 @@ async function openProd(id){
       <button class="heart ${FAV[p.id]?'on':''}" onclick="toggleFav('${p.id}',this);if(CUR)renderStore(CUR)">${heartSvg(FAV[p.id])}</button>
       <button class="buy" style="flex:1;background:#fff;color:var(--brand);border:1.5px solid var(--brand);border-radius:12px;padding:12px;font-weight:700" ${out?'disabled':''} onclick="addToCart('${p.id}',this);refreshView()">+ السلة</button>
       <button class="buy" style="flex:1.4;background:var(--brand);color:#fff;border-radius:12px;padding:12px;font-weight:800" ${out?'disabled':''} onclick="buyNow('${p.id}')">اشترِ الآن</button></div>
+    ${similarHtml(p)}
   </div>`);
+}
+
+
+/* ================== المتابعة والإشعارات ================== */
+let FOLLOWS = new Set();
+async function loadFollows(){
+  try{ const { data } = await db.from('celeb_follows').select('celebrity_id'); FOLLOWS = new Set((data||[]).map(x=>x.celebrity_id)); }catch(e){}
+}
+async function toggleFollow(cid, btn){
+  if(!me) return;
+  const on = FOLLOWS.has(cid);
+  btn.disabled = true;
+  const { error } = on ? await db.from('celeb_follows').delete().eq('user_id',me.id).eq('celebrity_id',cid)
+                       : await db.from('celeb_follows').insert({ user_id:me.id, celebrity_id:cid });
+  btn.disabled = false;
+  if(error) return toast('تعذّر: '+error.message);
+  on ? FOLLOWS.delete(cid) : FOLLOWS.add(cid);
+  btn.classList.toggle('on', !on); btn.textContent = on ? 'متابعة' : 'تتابعه';
+  if(!on){ toast('ستصلك رسالة عندما يضيف '+C(cid).name+' منتجاً جديداً'); if(pushState()!=='on') enablePush(false); }
+}
+function pushState(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'no';
+  if(Notification.permission==='denied') return 'denied';
+  try{ return localStorage.getItem('chrili_push')==='1' && Notification.permission==='granted' ? 'on' : 'off'; }catch(e){ return 'off'; }
+}
+function b64ToBytes(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
+async function enablePush(test){
+  const st = pushState();
+  if(st==='no') return toast('هذا الهاتف لا يدعم الإشعارات');
+  if(st==='denied') return toast('الإشعارات ممنوعة في إعدادات الهاتف لهذا التطبيق');
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted') return toast('لم تُفعَّل الإشعارات');
+    const reg = await navigator.serviceWorker.ready;
+    const { data, error } = await db.functions.invoke('push', { body:{ action:'key' } });
+    if(error || !data?.key) throw new Error(error?.message || 'no key');
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:b64ToBytes(data.key) });
+    const j = sub.toJSON();
+    const { error:e2 } = await db.from('push_subs').upsert({ user_id:me.id, endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, lang:(window.CHRILI_LANG||'ar') }, { onConflict:'endpoint' });
+    if(e2) throw e2;
+    try{ localStorage.setItem('chrili_push','1'); }catch(e){}
+    const b=document.getElementById('pushBtn'); if(b) b.textContent='مفعّلة';
+    if(test){ await db.functions.invoke('push', { body:{ action:'test' } }); toast('تم التفعيل، وأرسلنا لك إشعار تجربة'); }
+    else toast('تم تفعيل الإشعارات');
+  }catch(e){ reportError?.('enablePush: '+(e.message||e)); toast('تعذّر تفعيل الإشعارات'); }
 }
 
 /* ================== السلة ================== */
@@ -923,6 +995,7 @@ function renderAccount(){
   const b=document.getElementById('accountBox'); if(!b||!me) return;
   b.innerHTML=`<div class="row" style="color:var(--ink)"><span>الاسم</span><b>${esc(me.name)}</b></div>
     <div class="row" style="color:var(--ink)"><span>الهاتف</span><b dir="ltr">${esc(me.phone)}</b></div>
+    <div class="row" style="color:var(--ink)"><span>إشعارات الطلبات والجديد</span><button class="follow" id="pushBtn" onclick="enablePush(true)">${pushState()==='on'?'مفعّلة':'تفعيل'}</button></div>
     <div class="row"><a href="privacy.html" target="_blank" style="color:var(--brand)">سياسة الخصوصية</a></div>
     <button onclick="deleteAccountSheet()" style="width:100%;margin-top:12px;padding:12px;border-radius:12px;background:#fff;border:1.5px solid #c0392b;color:#c0392b;font-weight:600">حذف حسابي</button>`;
 }
