@@ -316,6 +316,13 @@ h1,h2,h3,h4,.hello,.section-t,.sh h3{line-height:1.4}
 [dir=ltr] .shead .shr{left:auto;right:16px}
 .row .follow{margin-top:0;color:var(--brand);border-color:var(--brand)}
 .row .follow.on{color:#1C2421}
+.paym{display:grid;gap:8px;margin:8px 0 4px}
+.paym label{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font-weight:500;margin:0;cursor:pointer}
+.paym label.on{border-color:var(--brand);background:#EEF4F1}
+.paym input{accent-color:var(--brand);width:18px;height:18px;margin:0}
+.paybox{border:1px solid var(--line);border-radius:16px;padding:16px;background:#fff;text-align:start;margin:16px 0}
+.paybox .num{font-size:22px;font-weight:600;letter-spacing:0;font-variant-numeric:tabular-nums}
+.pst{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:500}
 .sim-t{font-size:16px;font-weight:600;margin:24px 0 12px}
 .sim{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .sim button{flex:0 0 120px;text-align:start;background:none;border:0;padding:0;font:inherit;color:var(--ink)}
@@ -537,10 +544,10 @@ function otpInfo(id, r, phone){
     ? `وضع التجربة (بدون SMS): الرمز هو <b dir="ltr" style="font-size:17px">${r.test_code}</b>`
     : `أرسلنا رمزاً إلى <b dir="ltr">${phone}</b>. لم يصلك؟ يمكنك طلب رمز جديد بعد دقيقة.`;
 }
-let REG_SENT=null, RESET_SENT=null, SIGNUP_MODE=1, WA_NUM='';
+let REG_SENT=null, RESET_SENT=null, SIGNUP_MODE=1, WA_NUM='', PAY={}, PAYM='cod';
 async function loadAuthSettings(){
-  try{ const { data } = await db.from('app_settings').select('key,value').in('key',['signup_mode','whatsapp_number']);
-    (data||[]).forEach(r=>{ if(r.key==='signup_mode') SIGNUP_MODE=Number(r.value); if(r.key==='whatsapp_number') WA_NUM=String(Math.trunc(Number(r.value))); });
+  try{ const { data } = await db.from('app_settings').select('key,value').in('key',['signup_mode','whatsapp_number','pay_bankily','pay_masrvi','pay_sedad']);
+    (data||[]).forEach(r=>{ if(r.key==='signup_mode') SIGNUP_MODE=Number(r.value); if(r.key==='whatsapp_number') WA_NUM=String(Math.trunc(Number(r.value))); if(r.key.startsWith('pay_')&&Number(r.value)>0) PAY[r.key.slice(4)]=String(Math.trunc(Number(r.value))); });
   }catch(e){}
   if(SIGNUP_MODE===2){ const b=document.getElementById('rBtn'); if(b) b.textContent='إنشاء الحساب';
     const h=document.getElementById('regHint'); if(h) h.innerHTML='بعد إنشاء الحساب تؤكّد رقمك <b>برسالة واتساب واحدة</b> إلى اشريلي (مجاناً). بعدها تدخل دائماً بكلمة المرور.'; }
@@ -970,9 +977,38 @@ function renderCart(){
     <div class="row"><span>التوصيل</span><span>${ship?fmt(ship):'مجاني'}</span></div>
     <div class="row total"><span>الإجمالي</span><span>${fmt(sub+ship)}</span></div>
     <label>عنوان التوصيل</label>
-    <input class="field" id="addr" placeholder="الحي، الشارع، علامة قريبة...">
+    <input class="field" id="addr" placeholder="الحي، الشارع، علامة قريبة" value="${esc(window.ADDR||'')}" oninput="window.ADDR=this.value">
+    ${payMethodsHtml()}
     <button class="btn" id="coBtn" onclick="checkout()">تأكيد الطلب</button>
     <p class="hint">التوصيل ${fmt(SHIP.fee)}، ومجاني للطلبات من ${fmt(SHIP.free)} فأكثر</p></div>`;
+}
+const PAY_NAMES={cod:'الدفع عند الاستلام',bankily:'Bankily',masrvi:'Masrvi',sedad:'Sedad'};
+const PAY_ST={unpaid:['غير مدفوع','#8B938E'],pending:['الدفع قيد التحقق','#b7791f'],paid:['مدفوع','#2E7D5B'],rejected:['لم نجد الدفع','#c0392b']};
+function payMethodsHtml(){
+  const ms=['cod',...['bankily','masrvi','sedad'].filter(m=>PAY[m])];
+  if(!ms.includes(PAYM)) PAYM='cod';
+  if(ms.length<2) return '';
+  return `<label>طريقة الدفع</label><div class="paym">${ms.map(m=>`<label class="${PAYM===m?'on':''}"><input type="radio" name="paym" value="${m}" ${PAYM===m?'checked':''} onchange="PAYM=this.value;renderCart()"><span data-raw>${m==='cod'?'':PAY_NAMES[m]}</span>${m==='cod'?PAY_NAMES.cod:''}</label>`).join('')}</div>`;
+}
+function payBoxHtml(orderId,total,method){
+  const num=PAY[method]; if(!num) return '';
+  return `<div class="paybox" id="pb_${orderId}">
+    <div style="font-weight:600;margin-bottom:8px">ادفع <bdi>${fmt(total)}</bdi> عبر <span data-raw>${PAY_NAMES[method]}</span></div>
+    <div style="color:var(--muted);font-size:14px">حوّل المبلغ إلى رقم اشريلي:</div>
+    <div class="num"><bdi dir="ltr">${num}</bdi></div>
+    <div style="color:var(--muted);font-size:14px;margin-top:8px">ثم اكتب رقم العملية الذي يظهر في تطبيقك بعد التحويل:</div>
+    <input class="field" id="pr_${orderId}" dir="ltr" inputmode="text" autocomplete="off" placeholder="رقم العملية" style="margin-top:8px">
+    <button class="btn" id="pbtn_${orderId}" style="width:100%" onclick="submitPay('${orderId}','${method}')">أرسلت المبلغ</button>
+    <p class="hint">نتحقق من وصول المبلغ ثم نؤكّد طلبك. إذا لم تدفع الآن، تقدر تدفع لاحقاً من «طلباتي».</p></div>`;
+}
+async function submitPay(orderId,method){
+  const ref=(document.getElementById('pr_'+orderId)?.value||'').trim();
+  if(ref.length<4) return toast('أدخل رقم العملية');
+  busy('pbtn_'+orderId,true);
+  const { error } = await db.rpc('submit_payment',{ p_order:orderId, p_method:method, p_ref:ref });
+  if(error){ busy('pbtn_'+orderId,false,'أرسلت المبلغ'); return toast(error.message); }
+  const b=document.getElementById('pb_'+orderId); if(b) b.innerHTML='<div style="font-weight:600">شكراً، استلمنا رقم العملية</div><div style="color:var(--muted);font-size:14px;margin-top:4px">نتحقق من الدفع ونؤكّد طلبك قريباً.</div>';
+  try{ db.functions.invoke('push',{ body:{ action:'payment_submitted', order_id:orderId } }); }catch(e){}
 }
 async function checkout(){
   const addr=document.getElementById('addr').value.trim();
@@ -982,10 +1018,13 @@ async function checkout(){
   const { data: orderId, error } = await db.rpc('place_order', { items, p_address: addr });
   if(error){ reportError('checkout: '+error.message); busy('coBtn',false,'تأكيد الطلب'); return toast('تعذّر تسجيل الطلب: '+error.message); }
   const { data: order } = await db.from('orders').select('total').eq('id',orderId).single();
-  cart={}; saveCart();
+  cart={}; saveCart(); window.ADDR='';
+  try{ db.functions.invoke('push',{ body:{ action:'new_order', order_id:orderId } }); }catch(e){}
+  const wallet = PAYM!=='cod' && PAY[PAYM] && order;
   document.getElementById('doneBody').innerHTML=`<div class="big"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></div><h2>تم استلام طلبك</h2>
-    <p>رقم الطلب: <b>${orderId.slice(0,8).toUpperCase()}</b><br>${order?'المبلغ: <b>'+fmt(order.total)+'</b><br>':''}سنتصل بك على الرقم ${esc(me.phone)} لتأكيد التوصيل.</p>
-    <button class="btn" onclick="go('orders')">عرض طلباتي</button>`;
+    <p>رقم الطلب: <b>${orderId.slice(0,8).toUpperCase()}</b><br>${order?'المبلغ: <b>'+fmt(order.total)+'</b><br>':''}${wallet?'':'سنتصل بك على الرقم '+esc(me.phone)+' لتأكيد التوصيل.'}</p>
+    ${wallet?payBoxHtml(orderId,order.total,PAYM):''}
+    <button class="btn" style="${wallet?'background:#fff;color:var(--brand);border:1px solid var(--brand)':''}" onclick="go('orders')">عرض طلباتي</button>`;
   go('done');
 }
 
@@ -1022,12 +1061,16 @@ function deleteAccountSheet(){
     await db.auth.signOut().catch(()=>{}); toast('تم حذف حسابك نهائياً');
   };
 }
+function payLater(id,total){
+  const ms=['bankily','masrvi','sedad'].filter(m=>PAY[m]); const el=document.getElementById('pl_'+id); if(!el) return;
+  el.innerHTML=`<div class="paym" style="margin-top:8px">${ms.map(m=>`<label onclick="document.getElementById('pl_${id}').innerHTML=payBoxHtml('${id}',${total},'${m}')"><span data-raw>${PAY_NAMES[m]}</span></label>`).join('')}</div>`;
+}
 async function renderOrders(){
   renderAccount();
   const el=document.getElementById('ordersBody');
   el.innerHTML=`<div class="empty">جارٍ التحميل...</div>`;
   const { data, error } = await db.from('orders')
-    .select('id,total,status,created_at,address,order_items(qty,unit_price,products(name))')
+    .select('id,total,status,created_at,address,payment_method,payment_status,order_items(qty,unit_price,products(name))')
     .order('created_at',{ascending:false});
   if(error){ reportError('orders: '+error.message); el.innerHTML=`<div class="empty">تعذّر تحميل الطلبات</div>`; return; }
   if(!data.length){ el.innerHTML=`<div class="empty"><div class="emi"><svg class="ic" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div><p>لا توجد طلبات بعد</p></div>`; return; }
@@ -1038,6 +1081,8 @@ async function renderOrders(){
       <div class="row"><span>${new Date(o.created_at).toLocaleDateString('fr-FR')}</span><span>${esc(o.address||'')}</span></div>
       ${o.order_items.map(i=>`<div class="row"><span>${esc(i.products?.name||'منتج')} × ${i.qty}</span><span>${fmt(i.unit_price*i.qty)}</span></div>`).join('')}
       <div class="row total"><span>الإجمالي</span><span>${fmt(o.total)}</span></div>
+      ${o.payment_method!=='cod'||o.payment_status!=='unpaid'?`<div class="row"><span data-raw>${PAY_NAMES[o.payment_method]||''}</span><span class="pst" style="background:${(PAY_ST[o.payment_status]||PAY_ST.unpaid)[1]}22;color:${(PAY_ST[o.payment_status]||PAY_ST.unpaid)[1]}">${(PAY_ST[o.payment_status]||PAY_ST.unpaid)[0]}</span></div>`:''}
+      ${o.status==='new'&&['unpaid','rejected'].includes(o.payment_status)&&Object.keys(PAY).length?`<button class="back" style="margin-top:8px" onclick="payLater('${o.id}',${Number(o.total)})">ادفع الآن بالتطبيق البنكي</button><div id="pl_${o.id}"></div>`:''}
     </div>`; }).join('');
 }
 

@@ -337,9 +337,16 @@ async function editShipping(){
       <option value="2" ${Number(g('signup_mode')??1)===2?'selected':''}>رسالة واتساب يرسلها الزبون، وأنا أؤكّد (مجاني)</option>
       <option value="1" ${Number(g('signup_mode')??1)===1?'selected':''}>رمز SMS تلقائي (يحتاج مزوّد رسائل)</option></select>
     <label>رقم واتساب اشريلي (يستقبل رسائل التأكيد)</label><input class="field" id="sWa" inputmode="numeric" placeholder="8 أرقام" value="${esc(g('whatsapp_number')?String(Math.trunc(g('whatsapp_number'))):'')}">
+    <h3 style="margin-top:18px">الدفع بالتطبيقات البنكية</h3>
+    <p class="hint">اكتب رقم حساب اشريلي في كل تطبيق. اتركه فارغاً لإخفاء هذه الطريقة عن الزبون.</p>
+    <label>رقم Bankily</label><input class="field" id="pBankily" inputmode="numeric" dir="ltr" placeholder="8 أرقام" value="${Number(g('pay_bankily'))>0?Math.trunc(g('pay_bankily')):''}">
+    <label>رقم Masrvi</label><input class="field" id="pMasrvi" inputmode="numeric" dir="ltr" placeholder="8 أرقام" value="${Number(g('pay_masrvi'))>0?Math.trunc(g('pay_masrvi')):''}">
+    <label>رقم Sedad</label><input class="field" id="pSedad" inputmode="numeric" dir="ltr" placeholder="8 أرقام" value="${Number(g('pay_sedad'))>0?Math.trunc(g('pay_sedad')):''}">
     <button class="btn" id="saveBtn">حفظ</button>
     <button class="btn" style="background:var(--bg);color:var(--ink);margin-top:10px" onclick="closeSheet()">إلغاء</button>`);
   $('saveBtn').onclick=async()=>{
+    const pays={pay_bankily:$('pBankily').value.trim(),pay_masrvi:$('pMasrvi').value.trim(),pay_sedad:$('pSedad').value.trim()};
+    for(const v of Object.values(pays)) if(v && !/^\d{8}$/.test(v)) return toast('رقم الحساب البنكي: 8 أرقام');
     const fee=Number($('sFee').value), free=Number($('sFree').value);
     if(!(fee>=0)||!(free>=0)) return toast('أدخل أرقاماً صحيحة');
     const wa=$('sWa').value.trim(); if(!/^[234]\d{7}$/.test(wa)) return toast('رقم واتساب: 8 أرقام يبدأ بـ 2 أو 3 أو 4');
@@ -348,14 +355,15 @@ async function editShipping(){
     const r2=await db.from('app_settings').update({value:free, updated_at:new Date().toISOString()}).eq('key','free_shipping_from');
     const r3=await db.from('app_settings').update({value:Number($('sMode').value), updated_at:new Date().toISOString()}).eq('key','signup_mode');
     const r4=await db.from('app_settings').update({value:Number(wa), updated_at:new Date().toISOString()}).eq('key','whatsapp_number');
-    if(r1.error||r2.error||r3.error||r4.error){ busy(false); return toast('تعذّر الحفظ'); }
+    const rp=await Promise.all(Object.entries(pays).map(([k,v])=>db.from('app_settings').update({value:v?Number(v):0, updated_at:new Date().toISOString()}).eq('key',k)));
+    if(r1.error||r2.error||r3.error||r4.error||rp.some(x=>x.error)){ busy(false); return toast('تعذّر الحفظ'); }
     closeSheet(); toast('تم حفظ الإعدادات'); renderStats();
   };
 }
 async function renderStats(){
   const [u, o, p, c, er] = await Promise.all([
     me.role==='admin' ? db.from('profiles').select('id',{count:'exact',head:true}) : Promise.resolve({count:null}),
-    db.from('orders').select('total,status,created_at'),
+    db.from('orders').select('total,status,created_at,payment_status'),
     fetchAll(()=>db.from('products').select('id,stock,active').order('id')),
     db.from('celebrities').select('id',{count:'exact',head:true}),
     me.role==='admin' ? db.from('app_errors').select('id',{count:'exact',head:true}).gte('created_at', new Date(Date.now()-7*864e5).toISOString()) : Promise.resolve({count:null})
@@ -367,6 +375,7 @@ async function renderStats(){
   const today=new Date().toDateString();
   const todayN=orders.filter(x=>new Date(x.created_at).toDateString()===today).length;
   const newN=orders.filter(x=>x.status==='new').length;
+  const payN=orders.filter(x=>x.payment_status==='pending').length;
   const low=(p.data||[]).filter(x=>x.active && x.stock<=3).length;
   $('main').innerHTML=`
     <h2 class="hello" style="margin-top:4px">نظرة عامة <span class="pill" style="background:${me.role==='admin'?'#0E4D3A':'#1f4e79'};font-size:13px;vertical-align:middle">${me.role==='admin'?'المدير':'موظف'}</span></h2>
@@ -385,16 +394,17 @@ async function renderStats(){
       ${me.role==='admin'?`<div class="stat" style="cursor:pointer" onclick="go('errors')"><div class="k">أخطاء آخر 7 أيام</div><div class="v" style="color:${er.count?'var(--danger)':'#0E4D3A'}">${er.count??0}</div></div>`:''}
       <div class="stat"><div class="k">مخزون منخفض (3 أو أقل)</div><div class="v" style="color:${low?'var(--danger)':'var(--ink)'}">${low}</div></div>
     </div>
+    ${payN?`<button class="btn" style="max-width:320px;background:#b7791f" onclick="orderFilter='paycheck';go('orders')">دفعات تنتظر التحقق (${payN})</button>`:''}
     ${newN?`<button class="btn" style="max-width:320px" onclick="orderFilter='new';go('orders')">عرض الطلبات الجديدة (${newN})</button>`:''}`;
 }
 
 /* ================== الطلبات ================== */
 async function renderOrders(){
-  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,profiles(full_name,phone_verified),order_items(qty,unit_price,prep_status,merchant_id,celebrity_id,ref_code,products(name))').order('created_at',{ascending:false}).limit(200);
-  if(orderFilter!=='all') q=q.eq('status',orderFilter);
+  let q=db.from('orders').select('id,total,status,created_at,address,phone,customer_name,payment_method,payment_ref,payment_status,profiles(full_name,phone_verified),order_items(qty,unit_price,prep_status,merchant_id,celebrity_id,ref_code,products(name))').order('created_at',{ascending:false}).limit(200);
+  if(orderFilter==='paycheck') q=q.eq('payment_status','pending'); else if(orderFilter!=='all') q=q.eq('status',orderFilter);
   const [{ data, error }] = await Promise.all([q, loadMerchants(), CELEBS.length?null:loadCatalog()]);
   if(error) return fail('تعذّر تحميل الطلبات', error);
-  const opts=[['all','كل الطلبات'],...Object.entries(STATUS).map(([k,v])=>[k,v[0]])];
+  const opts=[['all','كل الطلبات'],['paycheck','دفعات تنتظر التحقق'],...Object.entries(STATUS).map(([k,v])=>[k,v[0]])];
   $('main').innerHTML=`
     <div class="toolbar"><select class="grow" onchange="orderFilter=this.value;go('orders')">
       ${opts.map(([k,l])=>`<option value="${k}" ${k===orderFilter?'selected':''}>${l}</option>`).join('')}
@@ -412,8 +422,24 @@ function orderCard(o){
     <div class="s">${esc(o.customer_name||o.profiles?.full_name||'')} · ${esc(o.phone||'')}${o.profiles&&o.profiles.phone_verified===false?' <span class="pill" style="background:#b7791f">رقم غير مؤكّد — اتصل قبل التوصيل</span>':''}<br>${esc(o.address||'—')}<br>${day(o.created_at)}</div>
     <div class="s" style="color:var(--ink);margin-top:8px">${items}</div>
     <div class="hd" style="margin-top:8px"><span class="t">الإجمالي</span><span class="t" style="color:var(--brand)">${fmt(o.total)}</span></div>
+    ${payRow(o)}
     ${next.length?`<div class="acts">${next.map(([s,l,c])=>`<button class="sbtn ${c}" onclick="setStatus('${o.id}','${s}')">${l}</button>`).join('')}</div>`:''}
   </div>`;
+}
+const PAYN={cod:'عند الاستلام',bankily:'Bankily',masrvi:'Masrvi',sedad:'Sedad'};
+const PAYS={unpaid:['غير مدفوع','#8B938E'],pending:['تحقّق من الدفع','#b7791f'],paid:['مدفوع','#2E7D5B'],rejected:['الدفع مرفوض','#c0392b']};
+function payRow(o){
+  if(!o.payment_method||(o.payment_method==='cod'&&o.payment_status==='unpaid')) return '<div class="s" style="margin-top:4px">الدفع: عند الاستلام</div>';
+  const st=PAYS[o.payment_status]||PAYS.unpaid;
+  return `<div class="s" style="margin-top:8px;color:var(--ink)">الدفع: <b data-raw>${PAYN[o.payment_method]||''}</b> <span class="pill" style="background:${st[1]}">${st[0]}</span>${o.payment_ref?` · رقم العملية <b dir="ltr" style="font-family:monospace">${esc(o.payment_ref)}</b>`:''}</div>
+    ${o.payment_status==='pending'?`<p class="hint">افتح تطبيق <span data-raw>${PAYN[o.payment_method]}</span> وتأكّد أن مبلغ ${fmt(o.total)} وصل برقم العملية هذا.</p><div class="acts"><button class="sbtn pri" onclick="payConfirm('${o.id}',true)">وصل المبلغ</button><button class="sbtn dan" onclick="payConfirm('${o.id}',false)">لم يصل</button></div>`:''}
+    ${o.payment_status==='paid'||o.payment_status==='rejected'?`<div class="acts"><button class="sbtn" onclick="payConfirm('${o.id}',${o.payment_status!=='paid'})">${o.payment_status==='paid'?'إلغاء تأكيد الدفع':'تأكيد الدفع'}</button></div>`:''}`;
+}
+async function payConfirm(id,ok){
+  const { error } = await db.rpc('confirm_payment',{ p_order:id, p_ok:ok });
+  if(error) return toast('تعذّر: '+error.message);
+  toast(ok?'تم تأكيد الدفع':'سُجّل أن الدفع لم يصل'); go('orders');
+  notify({action:'payment', order_id:id});
 }
 async function setStatus(id,s){
   const { error } = await db.from('orders').update({status:s}).eq('id',id);
